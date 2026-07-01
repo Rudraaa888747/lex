@@ -1,0 +1,181 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  password      String
+  role          String    @default("USER")
+  plan          String    @default("FREE")
+  suspended     Boolean   @default(false)
+  emailVerified DateTime?
+  image         String?
+  preferences   Json?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  documents     Document[]
+  analyses      Analysis[]
+  chatSessions  ChatSession[]
+  subscriptions Subscription[]
+  accounts      Account[]
+  sessions      Session[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  userAgent    String?
+  ip           String?
+  lastActive   DateTime @default(now())
+  createdAt    DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expires])
+}
+
+model Document {
+  id        String     @id @default(cuid())
+  userId    String
+  title     String
+  type      String     @default("OTHER")
+  fileType  String
+  fileSize  Int
+  filePath  String?
+  content   String?
+  status    String     @default("PROCESSING")
+  language  String     @default("EN")
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  analyses  Analysis[]
+
+  @@index([userId])
+  @@index([userId, createdAt(sort: Desc)])
+}
+
+model Analysis {
+  id                String   @id @default(cuid())
+  documentId        String   @unique
+  userId            String
+  summary           String?
+  plainLanguage     String?
+  keyClauses        String?
+  rightsObligations String?
+  importantDates    String?
+  financialTerms    String?
+  riskAssessment    String?
+
+  // Enterprise Analysis Fields
+  topRedFlags             String?
+  importantClauses        String?
+  beforeYouSign           String?
+  legalInsights           String?
+  contractScore           String?
+  conflictOfInterest      String?
+  favorableClauses        String?
+  jurisdictionInsights    String?
+  language          String   @default("EN")
+  tokensUsed        Int      @default(0)
+  status            String   @default("PENDING")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  document          Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, createdAt(sort: Desc)])
+}
+
+model ChatSession {
+  id         String       @id @default(cuid())
+  userId     String
+  documentId String?
+  title      String       @default("New Chat")
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages   ChatMessage[]
+
+  @@index([userId])
+}
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  sessionId String
+  role      String
+  content   String
+  createdAt DateTime @default(now())
+  session   ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
+
+model Comparison {
+  id          String   @id @default(cuid())
+  userId      String
+  documentIds String
+  result      String?
+  status      String   @default("PENDING")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Subscription {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  plan              String   @default("FREE")
+  status            String   @default("ACTIVE")
+  billingCycle      String   @default("MONTHLY")
+  currentPeriodStart DateTime @default(now())
+  currentPeriodEnd  DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String
+  details   String?
+  ip        String?
+  createdAt DateTime @default(now())
+}
+
+model ApiKey {
+  id        String   @id @default(cuid())
+  name      String
+  key       String   @unique
+  userId    String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
