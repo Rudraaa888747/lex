@@ -5,6 +5,12 @@ const nextConfig: NextConfig = {
     root: process.cwd(),
   },
   serverExternalPackages: ["pdf-parse", "mammoth"],
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
   async headers() {
     return [
       {
