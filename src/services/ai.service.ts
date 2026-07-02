@@ -3,7 +3,7 @@ import { type AdvancedAnalysisResult, type ContractScoreBreakdown } from "@/type
 import { normalizeAnalysisResult } from "@/lib/analysis-contract"
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || "",
+  apiKey: process.env.OPENAI_API_KEY || "dummy_key",
   baseURL: "https://openrouter.ai/api/v1",
 })
 
