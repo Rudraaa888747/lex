@@ -118,6 +118,8 @@ export function SiteHeader() {
     </>
   )
 
+  if (isAuth) return null;
+
   return (
     <>
       <header className="g-nav fixed top-0 left-0 right-0 z-[200]">
