@@ -85,7 +85,7 @@ export default function DocumentTypePage() {
 
       <div className="relative z-10 max-w-[var(--max-w)] mx-auto px-4 sm:px-6 py-10 sm:py-16 space-y-6">
         {/* Back */}
-        <div className="animate-in">
+        <div className="animate-in mt-4 sm:mt-8 mb-4">
           <Link
             href="/"
             className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground bg-card hover:bg-[rgba(0,0,0,0.04)] border border-border rounded-full shadow-sm transition-all group"

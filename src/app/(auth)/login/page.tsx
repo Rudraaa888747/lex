@@ -64,7 +64,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center px-4 py-20 bg-background relative overflow-hidden">
       <div className="relative w-full max-w-md">
         {/* Back Link */}
-        <div className="mb-6 relative z-20 flex justify-center md:justify-start">
+        <div className="mb-6 mt-4 sm:mt-8 relative z-20 flex justify-center md:justify-start">
           <Link 
             href="/" 
             className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground bg-card hover:bg-[rgba(0,0,0,0.04)] border border-border rounded-full shadow-sm transition-all group"

@@ -60,7 +60,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <AppWrapper>
           <SiteHeader />
-          <main className="flex-1 pt-20 lg:pt-24 safe-top">{children}</main>
+          <main className="flex-1 pt-24 lg:pt-32 safe-top">{children}</main>
           <SiteFooter />
         </AppWrapper>
       </body>
