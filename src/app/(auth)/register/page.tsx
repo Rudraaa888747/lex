@@ -87,18 +87,18 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-20 bg-background relative overflow-hidden">
-      {/* Absolute Back Link */}
-      <Link 
-        href="/" 
-        className="absolute top-6 left-6 md:top-10 md:left-10 inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors z-20 group"
-      >
-        <div className="w-8 h-8 rounded-full bg-[rgba(0,0,0,0.03)] border border-border flex items-center justify-center group-hover:bg-[rgba(0,0,0,0.06)] transition-all">
-          <ChevronLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
-        </div>
-        Back to Website
-      </Link>
-
       <div className="relative w-full max-w-md">
+        {/* Back Link */}
+        <div className="mb-6 relative z-20 flex justify-center md:justify-start">
+          <Link 
+            href="/" 
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground bg-card hover:bg-[rgba(0,0,0,0.04)] border border-border rounded-full shadow-sm transition-all group"
+          >
+            <ChevronLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+            Back to Website
+          </Link>
+        </div>
+
         {/* Ambient Glow */}
         <div 
           className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[400px] rounded-full pointer-events-none z-0 blur-[120px]" 
