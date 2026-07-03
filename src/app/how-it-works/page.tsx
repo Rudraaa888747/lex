@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { Upload, Brain, FileSearch, Download, ArrowRight, ShieldCheck, Zap, Key } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { BackToWebsite } from "@/components/ui/back-to-website"
 
 const steps = [
   {
@@ -60,6 +61,7 @@ export default function HowItWorksPage() {
       <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-[rgba(0,0,0,0.03)] rounded-full blur-[120px] pointer-events-none z-0" />
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 relative z-10">
+        <BackToWebsite className="mb-8 justify-start mt-0" />
         <div className="text-center mb-16 animate-in fade-in slide-in-from-bottom-8 duration-700">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[rgba(0,0,0,0.06)] border border-border text-foreground text-sm font-semibold mb-6 shadow-[var(--shadow-sm)]">
             <Zap className="w-4 h-4 text-amber-500" />

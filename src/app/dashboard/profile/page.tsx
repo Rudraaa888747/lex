@@ -1,4 +1,4 @@
-import { auth } from "@/lib/auth-config"
+import { getAuth } from "@/lib/auth-cached"
 import { prisma } from "@/lib/database"
 import { redirect } from "next/navigation"
 import { ProfileClient } from "./ProfileClient"
@@ -12,7 +12,7 @@ function parseDevice(userAgent: string | null) {
 }
 
 export default async function ProfilePage() {
-  const session = await auth()
+  const session = await getAuth()
   if (!session?.user?.id) redirect("/login")
 
   const dbSessions = await prisma.session.findMany({

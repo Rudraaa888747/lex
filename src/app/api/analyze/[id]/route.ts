@@ -56,7 +56,7 @@ export async function POST(
       where: {
         id,
         userId: session.user.id,
-        status: "READY_FOR_ANALYSIS",
+        status: { in: ["READY_FOR_ANALYSIS", "READY_FOR_ANALYSIS_LOW_CONFIDENCE"] },
       },
       data: { status: "ANALYZING" },
     })

@@ -2,8 +2,9 @@
 
 import { useState } from "react"
 import { Badge } from "@/components/ui/badge"
-import { ChevronDown, Search, ArrowLeft } from "lucide-react"
+import { ChevronDown, Search } from "lucide-react"
 import Link from "next/link"
+import { BackToWebsite } from "@/components/ui/back-to-website"
 
 const faqs = [
   { category: "General", items: [
@@ -39,10 +40,7 @@ export default function FAQPage() {
   return (
     <div className="py-20 lg:py-28">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-        <Link href="/" className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors mb-8 group">
-          <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
-          Back to Website
-        </Link>
+        <BackToWebsite className="mb-8 justify-start mt-0" />
         <div className="text-center mb-12">
           <Badge variant="default" size="lg" className="mb-4 bg-[rgba(0,0,0,0.06)] text-foreground border-border shadow-[var(--shadow-sm)]">FAQ</Badge>
           <h1 className="text-4xl sm:text-5xl font-bold mb-4 tracking-tight text-foreground" style={{ fontFamily: "var(--font-display)" }}>Frequently Asked Questions</h1>

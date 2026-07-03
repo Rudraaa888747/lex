@@ -1,10 +1,10 @@
-import { auth } from "@/lib/auth-config"
+import { getAuth } from "@/lib/auth-cached"
 import { prisma } from "@/lib/database"
 import { redirect } from "next/navigation"
 import { SettingsClient } from "./SettingsClient"
 
 export default async function SettingsPage() {
-  const session = await auth()
+  const session = await getAuth()
   if (!session?.user?.id) redirect("/login")
 
   const user = await prisma.user.findUnique({

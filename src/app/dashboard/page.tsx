@@ -7,7 +7,7 @@ import {
   BarChart3, Zap, Shield
 } from "lucide-react"
 import { AnimatedNumber } from "@/components/animated-number"
-import { auth } from "@/lib/auth-config"
+import { getAuth } from "@/lib/auth-cached"
 import { prisma } from "@/lib/database"
 import { redirect } from "next/navigation"
 
@@ -30,7 +30,7 @@ function StatusBadge({ status }: { status: string }) {
 
 /* ─────────────────────────── main page ─────────────────────── */
 export default async function DashboardPage() {
-  const session = await auth()
+  const session = await getAuth()
   if (!session?.user?.id) redirect("/login")
 
   const [documents, totalAnalyses] = await prisma.$transaction([

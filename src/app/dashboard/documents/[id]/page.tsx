@@ -255,6 +255,7 @@ export default function DocumentDetailsPage() {
         </div>
       </div>
 
+
       {doc.content && (
         <div className="glass-subtle rounded-2xl sm:rounded-3xl p-4 sm:p-7 border border-border bg-[rgba(0,0,0,0.02)]">
           <button
@@ -499,13 +500,15 @@ export default function DocumentDetailsPage() {
                   { label: "Auto Renewal?", data: legalInsights.autoRenewalPresent },
                 ].filter(i => i.data).map((item, i) => (
                   <div key={i} className="flex items-start gap-3 p-4 rounded-xl bg-card border border-border shadow-[var(--shadow-sm)]">
-                    {item.data?.answer ? (
+                    {item.data?.answer === true ? (
                       <CheckCircle className="w-5 h-5 text-[#16a34a] shrink-0 mt-0.5" />
-                    ) : (
+                    ) : item.data?.answer === false ? (
                       <XCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+                    ) : (
+                      <Info className="w-5 h-5 text-muted-foreground shrink-0 mt-0.5" />
                     )}
                     <div>
-                      <span className="font-bold text-[0.9rem] text-foreground">{item.label} {item.data?.answer ? "Yes" : "No"}</span>
+                      <span className="font-bold text-[0.9rem] text-foreground">{item.label} {item.data?.answer === true ? "Yes" : item.data?.answer === false ? "No" : "N/A"}</span>
                       <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{item.data?.evidence}</p>
                     </div>
                   </div>

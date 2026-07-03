@@ -8,12 +8,14 @@ import { Input } from "@/components/ui/input"
 import { Scale, Eye, EyeOff, ArrowRight, Check, ChevronLeft, Loader2, ShieldCheck, ShieldAlert, Shield } from "lucide-react"
 import { showToast } from "@/components/premium-toast"
 import { motion, AnimatePresence } from "framer-motion"
+import { BackToWebsite } from "@/components/ui/back-to-website"
 
 export default function RegisterPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [form, setForm] = useState({ name: "", email: "", password: "" })
+  const [termsAgreed, setTermsAgreed] = useState(false)
 
   // Dynamic Password Strength
   const passwordStrength = useMemo(() => {
@@ -46,6 +48,10 @@ export default function RegisterPage() {
     e.preventDefault()
     if (!passwordStrength.hasLength || !passwordStrength.hasNumOrSym) {
       showToast("Please meet the minimum password requirements", "error")
+      return
+    }
+    if (!termsAgreed) {
+      showToast("Please agree to the Terms of Service and Privacy Policy", "error")
       return
     }
     setLoading(true)
@@ -88,16 +94,7 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-20 bg-background relative overflow-hidden">
       <div className="relative w-full max-w-md">
-        {/* Back Link */}
-        <div className="mb-6 mt-4 sm:mt-8 relative z-20 flex justify-center md:justify-start">
-          <Link 
-            href="/" 
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground bg-card hover:bg-[rgba(0,0,0,0.04)] border border-border rounded-full shadow-sm transition-all group"
-          >
-            <ChevronLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
-            Back to Website
-          </Link>
-        </div>
+        <BackToWebsite />
 
         {/* Ambient Glow */}
         <div 
@@ -221,11 +218,30 @@ export default function RegisterPage() {
                 )}
               </AnimatePresence>
 
+              {/* Terms Agreement */}
+              <div className="pt-2 pb-2">
+                <button
+                  type="button"
+                  onClick={() => setTermsAgreed(!termsAgreed)}
+                  className="flex items-start gap-2.5 cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm text-left"
+                >
+                  <div className={`w-5 h-5 mt-0.5 shrink-0 rounded flex items-center justify-center border transition-all duration-200 ${termsAgreed ? 'bg-primary-btn border-primary-btn' : 'bg-[rgba(255,255,255,0.5)] border-border/80 group-hover:border-[rgba(0,0,0,0.3)]'}`}>
+                    <Check className={`w-3.5 h-3.5 text-white transition-transform duration-200 ${termsAgreed ? 'scale-100 opacity-100' : 'scale-50 opacity-0'}`} />
+                  </div>
+                  <span className="text-sm text-muted-foreground group-hover:text-foreground/90 transition-colors leading-relaxed">
+                    I agree to the{" "}
+                    <Link href="/terms" target="_blank" onClick={(e) => e.stopPropagation()} className="text-blue-500 hover:text-blue-400 hover:underline">Terms of Service</Link>{" "}
+                    and{" "}
+                    <Link href="/privacy" target="_blank" onClick={(e) => e.stopPropagation()} className="text-blue-500 hover:text-blue-400 hover:underline">Privacy Policy</Link>
+                  </span>
+                </button>
+              </div>
+
               <Button 
                 type="submit" 
                 variant="gradient" 
                 className="w-full relative overflow-hidden h-12 text-base rounded-xl mt-2" 
-                disabled={loading || (form.password.length > 0 && (!passwordStrength.hasLength || !passwordStrength.hasNumOrSym))} 
+                disabled={loading || (form.password.length > 0 && (!passwordStrength.hasLength || !passwordStrength.hasNumOrSym)) || !termsAgreed} 
                 suppressHydrationWarning
               >
                 <div className="flex items-center justify-center w-full relative">
@@ -240,11 +256,7 @@ export default function RegisterPage() {
               </Button>
             </form>
 
-            <p className="mt-6 text-[11px] text-muted-foreground/80 text-center leading-relaxed relative z-10">
-              By creating an account, you agree to our{" "}
-              <Link href="/terms" className="text-foreground font-semibold hover:text-foreground/80 transition-colors underline decoration-border underline-offset-2">Terms</Link> and{" "}
-              <Link href="/privacy" className="text-foreground font-semibold hover:text-foreground/80 transition-colors underline decoration-border underline-offset-2">Privacy Policy</Link>.
-            </p>
+
 
             <div className="mt-8 text-center text-sm text-muted-foreground relative z-10">
               Already have an account?{" "}

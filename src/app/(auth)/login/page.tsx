@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Scale, Eye, EyeOff, ArrowRight, Loader2, ChevronLeft, Check } from "lucide-react"
 import { showToast } from "@/components/premium-toast"
 import { motion } from "framer-motion"
+import { BackToWebsite } from "@/components/ui/back-to-website"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -63,16 +64,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-20 bg-background relative overflow-hidden">
       <div className="relative w-full max-w-md">
-        {/* Back Link */}
-        <div className="mb-6 mt-4 sm:mt-8 relative z-20 flex justify-center md:justify-start">
-          <Link 
-            href="/" 
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground bg-card hover:bg-[rgba(0,0,0,0.04)] border border-border rounded-full shadow-sm transition-all group"
-          >
-            <ChevronLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
-            Back to Website
-          </Link>
-        </div>
+        <BackToWebsite />
 
         {/* Ambient Glow */}
         <div 

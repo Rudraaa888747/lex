@@ -1,14 +1,12 @@
-import { Shield, ArrowLeft } from "lucide-react"
+import { Shield } from "lucide-react"
 import Link from "next/link"
+import { BackToWebsite } from "@/components/ui/back-to-website"
 
 export default function PrivacyPage() {
   return (
     <div className="py-20 lg:py-28">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-        <Link href="/" className="inline-flex items-center gap-2 text-sm font-medium text-[#9aa0a6] hover:text-[#e8eaed] transition-colors mb-8 group">
-          <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
-          Back to Website
-        </Link>
+        <BackToWebsite className="mb-8 justify-start mt-0" />
         <div className="text-center mb-12">
           <div className="w-12 h-12 rounded-2xl gradient-bg flex items-center justify-center mx-auto mb-4">
             <Shield className="w-6 h-6 text-white" />
@@ -48,8 +46,9 @@ export default function PrivacyPage() {
             <h2 className="text-xl font-bold mb-3">4. Data Security</h2>
             <p className="text-[#9aa0a6] leading-relaxed">
               We implement industry-standard security measures including AES-256 encryption, secure file storage, 
-              and access controls. Your documents are stored in isolated environments and are never shared with 
-              third parties.
+              and access controls. Your documents are stored in isolated environments. Data is shared only with 
+              trusted service providers (e.g., AI processing, storage, hosting) under strict confidentiality and 
+              data-processing agreements.
             </p>
           </section>
 
@@ -77,6 +76,47 @@ export default function PrivacyPage() {
               For users in the European Economic Area, we comply with the General Data Protection Regulation (GDPR). 
               This includes providing clear information about data processing, obtaining consent where required, 
               and enabling data portability and deletion.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-bold mb-3">8. Cookies & Tracking</h2>
+            <p className="text-[#9aa0a6] leading-relaxed">
+              We use essential cookies to maintain your session and secure your account. We also use analytics 
+              cookies to understand how our Platform is used and to improve the user experience. You can manage 
+              your cookie preferences through your browser settings.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-bold mb-3">9. Children's Privacy</h2>
+            <p className="text-[#9aa0a6] leading-relaxed">
+              Our Platform is not intended for users under the age of 18. We do not knowingly collect personal 
+              data from minors. If we become aware that we have collected such data, we will take steps to delete it.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-bold mb-3">10. AI Processing</h2>
+            <p className="text-[#9aa0a6] leading-relaxed">
+              Uploaded documents are processed using AI models to generate analysis, summaries, and risk assessments. 
+              The content of your documents is strictly used for this purpose and is not used to train third-party AI models.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-bold mb-3">11. Changes to This Policy</h2>
+            <p className="text-[#9aa0a6] leading-relaxed">
+              We may update this Privacy Policy from time to time. When we make significant changes, we will notify 
+              you by updating the "Last updated" date on this page or through other communication channels on the Platform.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-bold mb-3">12. Contact Us</h2>
+            <p className="text-[#9aa0a6] leading-relaxed">
+              If you have any questions or concerns about this Privacy Policy or our data practices, please contact us at{" "}
+              <a href="mailto:support@lexai.com" className="text-blue-500 hover:underline">support@lexai.com</a>.
             </p>
           </section>
         </div>

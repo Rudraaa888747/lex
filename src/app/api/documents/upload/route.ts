@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
     })
 
     try {
-      const extractedText = await extractDocumentTextFromBuffer({
+      const { text: extractedText, isOcrFallback } = await extractDocumentTextFromBuffer({
         buffer: fileBuffer,
         fileExtension: ext,
         language,
@@ -72,6 +72,13 @@ export async function POST(request: NextRequest) {
 
       if (!extractedText) {
         throw new Error("No readable text could be extracted from the uploaded document")
+      }
+
+      const { validateContent } = await import("@/services/ai.service")
+      const isValid = validateContent(extractedText)
+
+      if (!isValid) {
+        throw new Error("Document contains no readable text. We tried extracting text and running OCR, but the quality is too poor. Please provide a clearer document.")
       }
 
       const { error: uploadError } = await supabaseAdmin.storage

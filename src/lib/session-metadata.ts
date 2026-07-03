@@ -19,13 +19,22 @@ function getClientIpFromHeaders(headerMap: Headers) {
   return headerMap.get("x-real-ip")?.trim() || null
 }
 
+// In-memory cache to skip DB writes within the interval (per-process)
+const lastTouchMap = new Map<string, number>()
+
 export async function touchCurrentSession(userId: string, sessionToken: string) {
   if (!sessionToken) return
+
+  // Skip if we've touched this session recently in this process
+  const cacheKey = `${userId}:${sessionToken}`
+  const lastTouch = lastTouchMap.get(cacheKey)
+  const now = Date.now()
+  if (lastTouch && (now - lastTouch) < SESSION_TOUCH_INTERVAL_MS) return
 
   const headerMap = await headers()
   const userAgent = headerMap.get("user-agent")
   const ip = getClientIpFromHeaders(headerMap)
-  const threshold = new Date(Date.now() - SESSION_TOUCH_INTERVAL_MS)
+  const threshold = new Date(now - SESSION_TOUCH_INTERVAL_MS)
 
   await prisma.session.updateMany({
     where: {
@@ -43,4 +52,6 @@ export async function touchCurrentSession(userId: string, sessionToken: string) 
       ip,
     },
   })
+
+  lastTouchMap.set(cacheKey, now)
 }

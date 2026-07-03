@@ -3,7 +3,7 @@ export interface RedFlag {
   severityScore: number
   riskLevel: string
   explanation: string
-  evidence: string
+  evidence: string | null
   businessImpact: string
 }
 
@@ -12,7 +12,7 @@ export interface ImportantClause {
   title: string
   importance: string
   shortSummary: string
-  evidence: string
+  evidence: string | null
 }
 
 export interface RightsObligationsItem {
@@ -21,7 +21,7 @@ export interface RightsObligationsItem {
   severityScore: number
   importance: string
   explanation: string
-  evidence: string
+  evidence: string | null
 }
 
 export interface RightsObligations {
@@ -51,8 +51,8 @@ export interface BeforeYouSign {
 }
 
 export interface LegalInsight {
-  answer: boolean
-  evidence: string
+  answer: boolean | null
+  evidence: string | null
 }
 
 export interface LegalInsights {
@@ -74,7 +74,7 @@ export interface LegalInsights {
 export interface ConflictOfInterest {
   riskLevel: string
   explanation: string
-  evidence: string
+  evidence: string | null
   potentialImpact: string
   recommendedAction: string
 }
@@ -82,14 +82,14 @@ export interface ConflictOfInterest {
 export interface FavorableClause {
   clause: string
   benefit: string
-  evidence: string
+  evidence: string | null
 }
 
 export interface JurisdictionInsights {
   jurisdiction: string
   governingLaw: string
   legalContext: string
-  evidence: string
+  evidence: string | null
 }
 
 export interface ContractScoreBreakdown {
@@ -107,10 +107,12 @@ export interface ContractScoreCard {
   balance: string
   riskExposure: string
   fairnessExplanation: string
-  breakdown: ContractScoreBreakdown
+  breakdown: ContractScoreBreakdown | null
 }
 
 export interface AdvancedAnalysisResult {
+  documentType: string
+  documentTypeReasoning: string
   executiveSummary: string
   plainLanguage: string
   topRedFlags: RedFlag[]
@@ -123,5 +125,5 @@ export interface AdvancedAnalysisResult {
   conflictOfInterest: ConflictOfInterest
   favorableClauses: FavorableClause[]
   jurisdictionInsights: JurisdictionInsights
-  contractScore: ContractScoreBreakdown
+  contractScore: ContractScoreBreakdown | null
 }

@@ -1,14 +1,12 @@
-import { Newspaper, ArrowLeft } from "lucide-react"
+import { Newspaper } from "lucide-react"
 import Link from "next/link"
+import { BackToWebsite } from "@/components/ui/back-to-website"
 
 export default function PressPage() {
   return (
     <div className="py-20 lg:py-28">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-        <Link href="/" className="inline-flex items-center gap-2 text-sm font-medium text-[#9aa0a6] hover:text-[#e8eaed] transition-colors mb-8 group">
-          <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
-          Back to Website
-        </Link>
+        <BackToWebsite className="mb-8 justify-start mt-0" />
         <div className="text-center mb-12">
           <div className="w-12 h-12 rounded-2xl gradient-bg flex items-center justify-center mx-auto mb-4">
             <Newspaper className="w-6 h-6 text-white" />

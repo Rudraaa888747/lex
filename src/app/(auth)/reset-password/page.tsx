@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Scale, ArrowLeft, Mail } from "lucide-react"
 import { showToast } from "@/components/premium-toast"
+import { BackToWebsite } from "@/components/ui/back-to-website"
 
 export default function ResetPasswordPage() {
   const [email, setEmail] = useState("")
@@ -24,6 +25,7 @@ export default function ResetPasswordPage() {
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-20">
       <div className="relative w-full max-w-md">
+        <BackToWebsite className="mt-0" />
         <div className="text-center mb-8">
           <div className="w-12 h-12 rounded-2xl gradient-bg flex items-center justify-center mx-auto mb-4 shadow-lg shadow-primary/25">
             <Scale className="w-6 h-6 text-white" />

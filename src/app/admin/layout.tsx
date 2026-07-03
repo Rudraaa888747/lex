@@ -17,17 +17,18 @@ const adminSidebar = [
   { icon: Shield, label: "Security", href: "/admin/security" },
 ]
 
+import AdminLoading from "./loading"
+
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession()
   const pathname = usePathname()
 
-  if (status === "loading") {
-    return <div className="min-h-screen flex items-center justify-center bg-background"><div className="w-8 h-8 border-2 border-foreground border-t-transparent rounded-full animate-spin" /></div>
-  }
-
-  if (!session || session.user?.role !== "ADMIN") {
+  // Avoid redirecting while loading, but redirect if strictly unauthenticated or unauthorized
+  if (status === "unauthenticated" || (status === "authenticated" && session?.user?.role !== "ADMIN")) {
     redirect("/dashboard")
   }
+
+  const isLoading = status === "loading"
 
   return (
     <div className="min-h-screen bg-background">
@@ -80,7 +81,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </aside>
 
         <div className="flex-1 min-w-0">
-          <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto pb-20 lg:pb-8">{children}</div>
+          <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto pb-20 lg:pb-8">
+            {isLoading ? <AdminLoading /> : children}
+          </div>
         </div>
       </div>
     </div>
