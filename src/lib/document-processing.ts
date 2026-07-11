@@ -1,3 +1,5 @@
+import { UserFacingError } from "@/lib/api-error"
+
 const OCR_LANGUAGE_MAP: Record<string, string> = {
   EN: "eng",
   HI: "hin",
@@ -137,6 +139,6 @@ export async function extractDocumentTextFromBuffer(params: {
     case "jpeg":
       return extractTextFromImage(buffer, language)
     default:
-      throw new Error(`Unsupported file extension: ${fileExtension}`)
+      throw new UserFacingError(`Unsupported file extension: ${fileExtension}`)
   }
 }

@@ -71,6 +71,7 @@ model Document {
   filePath  String?
   content   String?
   status    String     @default("PROCESSING")
+  errorMessage String?
   language  String     @default("EN")
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt

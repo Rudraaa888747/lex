@@ -1,9 +1,22 @@
+import { apiError } from "@/lib/api-error"
 import { NextRequest } from "next/server"
 import { hash } from "bcryptjs"
 import { prisma } from "@/lib/database"
+import { registerLimiter } from "@/lib/rate-limit"
+import { getRequestMetadata } from "@/lib/request-metadata"
 
 export async function POST(request: NextRequest) {
   try {
+    const { ip } = await getRequestMetadata()
+    const { success, limit, remaining, reset } = await registerLimiter.limit(ip)
+
+    if (!success) {
+      return Response.json(
+        { error: "Too many requests, please try again later." },
+        { status: 429, headers: { "Retry-After": Math.ceil((reset - Date.now()) / 1000).toString() } }
+      )
+    }
+
     const { name, email, password } = await request.json()
 
     if (!email || !password) {
@@ -54,7 +67,6 @@ export async function POST(request: NextRequest) {
 
     return Response.json({ success: true, userId: user.id }, { status: 201 })
   } catch (error) {
-    console.error("Registration error:", error)
-    return Response.json({ error: "Internal server error" }, { status: 500 })
+    return apiError(error, "Internal server error", 500)
   }
 }

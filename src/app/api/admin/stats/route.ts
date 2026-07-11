@@ -1,3 +1,4 @@
+import { apiError } from "@/lib/api-error"
 import { NextRequest } from "next/server"
 import { auth } from "@/lib/auth-config"
 import { prisma } from "@/lib/database"
@@ -31,7 +32,6 @@ export async function GET() {
       }
     })
   } catch (error) {
-    console.error("Admin stats error:", error)
-    return Response.json({ error: "Internal server error" }, { status: 500 })
+    return apiError(error, "Internal server error", 500)
   }
 }

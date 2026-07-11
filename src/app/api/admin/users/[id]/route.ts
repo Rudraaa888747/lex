@@ -1,3 +1,4 @@
+import { apiError } from "@/lib/api-error"
 import { NextRequest } from "next/server"
 import { auth } from "@/lib/auth-config"
 import { prisma } from "@/lib/database"
@@ -27,7 +28,6 @@ export async function PATCH(
 
     return Response.json({ success: true })
   } catch (error) {
-    console.error("Admin user update error:", error)
-    return Response.json({ error: "Internal server error" }, { status: 500 })
+    return apiError(error, "Internal server error", 500)
   }
 }

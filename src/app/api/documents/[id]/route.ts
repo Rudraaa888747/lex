@@ -1,3 +1,4 @@
+import { apiError } from "@/lib/api-error"
 import { NextRequest } from "next/server"
 import { auth } from "@/lib/auth-config"
 import { prisma } from "@/lib/database"
@@ -32,8 +33,7 @@ export async function GET(
 
     return Response.json({ document, analysis })
   } catch (error) {
-    console.error("Document fetch error:", error)
-    return Response.json({ error: "Internal server error" }, { status: 500 })
+    return apiError(error, "Internal server error", 500)
   }
 }
 
@@ -68,7 +68,6 @@ export async function DELETE(
 
     return Response.json({ success: true })
   } catch (error) {
-    console.error("Document delete error:", error)
-    return Response.json({ error: "Internal server error" }, { status: 500 })
+    return apiError(error, "Internal server error", 500)
   }
 }

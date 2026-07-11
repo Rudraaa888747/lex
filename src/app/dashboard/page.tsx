@@ -309,7 +309,7 @@ export default async function DashboardPage() {
             {[
               { icon: Zap, label: "Analyze Document", href: "/dashboard/upload", color: "text-yellow-400", bg: "bg-yellow-500/10" },
               { icon: Shield, label: "Risk Report", href: "/dashboard/documents", color: "text-emerald-400", bg: "bg-emerald-500/10" },
-              { icon: TrendingUp, label: "View Insights", href: "/dashboard/analytics", color: "text-violet-400", bg: "bg-violet-500/10" },
+              { icon: TrendingUp, label: "View Settings", href: "/dashboard/settings", color: "text-violet-400", bg: "bg-violet-500/10" },
             ].map(({ icon: Icon, label, href, color, bg }) => (
               <Link
                 key={label}

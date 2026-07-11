@@ -397,7 +397,7 @@ export default function LandingPage() {
           <div className="cta-orb-2" />
           <div className="cta-inner">
             <h2 className="cta-h2">Ready to understand your contracts?</h2>
-            <p className="cta-sub">Join thousands of professionals who use Lax to review agreements faster and catch hidden risks.</p>
+            <p className="cta-sub">Join thousands of professionals who use Lex to review agreements faster and catch hidden risks.</p>
             <div className="cta-actions">
               <Link href="/register" className="btn-primary">Get Started Free <ArrowRight size={16} /></Link>
               <Link href="/pricing" className="btn-ghost g-subtle">View Pricing</Link>
@@ -410,7 +410,7 @@ export default function LandingPage() {
       {/* ── FOOTER ───────────────────────────────────────────────────── */}
       <footer className="py-12 px-[var(--gutter)] border-t border-[var(--outline-var)] bg-[var(--color-card)] text-center text-[var(--on-bg-muted)] text-sm font-mono mt-auto">
         <p className="mb-4 text-xs font-semibold text-[var(--danger)] bg-[var(--danger)]/10 inline-block px-4 py-2 rounded-full border border-[var(--danger)]/20">⚠ The information provided on this page is for educational purposes only and does not constitute legal advice. Always consult a qualified legal professional for advice specific to your situation.</p>
-        <p>© <span suppressHydrationWarning>{new Date().getFullYear()}</span> Lax AI. All rights reserved.</p>
+        <p>© <span suppressHydrationWarning>{new Date().getFullYear()}</span> Lex AI. All rights reserved.</p>
       </footer>
     </>
   )

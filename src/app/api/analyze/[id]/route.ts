@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server"
+import { NextRequest, after } from "next/server"
 import { auth } from "@/lib/auth-config"
 import { prisma } from "@/lib/database"
 import { analyzeDocument, validateContent } from "@/services/ai.service"
@@ -130,6 +130,7 @@ export async function POST(
         })
       } catch (error) {
         console.error("[Analyze Background Error]:", error)
+        const msg = error instanceof Error ? error.message : "AI service connection was interrupted, please try again"
         await prisma.document.updateMany({
           where: {
             id,
@@ -137,17 +138,17 @@ export async function POST(
             status: "ANALYZING",
             analyses: { none: {} },
           },
-          data: { status: "FAILED" }
+          data: { status: "FAILED", errorMessage: msg }
         }).catch(() => {})
       }
     };
 
-    // Start background task without awaiting it
-    runAnalysis();
+    after(runAnalysis);
 
     return Response.json({ success: true, status: "ANALYZING", message: "Analysis started in the background." })
   } catch (error) {
     const { id } = await params
+    const message = error instanceof Error ? error.message : "Analysis failed"
     await prisma.document.updateMany({
       where: {
         id,
@@ -155,10 +156,9 @@ export async function POST(
         status: "ANALYZING",
         analyses: { none: {} },
       },
-      data: { status: "READY_FOR_ANALYSIS" }
+      data: { status: "FAILED", errorMessage: message }
     }).catch(() => {})
 
-    const message = error instanceof Error ? error.message : "Analysis failed"
     console.error("Analysis error:", message)
     return Response.json({ error: message }, { status: 500 })
   }

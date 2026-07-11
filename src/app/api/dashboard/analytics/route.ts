@@ -1,3 +1,4 @@
+import { apiError } from "@/lib/api-error"
 import { auth } from "@/lib/auth-config"
 import { prisma } from "@/lib/database"
 
@@ -124,7 +125,6 @@ export async function GET() {
       },
     })
   } catch (error) {
-    console.error("[dashboard analytics]", error)
-    return Response.json({ error: "Failed to load analytics" }, { status: 500 })
+    return apiError(error, "Failed to load analytics", 500)
   }
 }

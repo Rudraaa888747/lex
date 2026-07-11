@@ -1,1 +1,1 @@
-export const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://lex.legal"
+export const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://lex-ecru.vercel.app")

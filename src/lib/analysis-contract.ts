@@ -49,13 +49,13 @@ export function normalizeAnalysisResult(result: AdvancedAnalysisResult, document
 
   return {
     ...result,
-    topRedFlags: result.topRedFlags.slice(0, 12).map(i => ({ ...i, evidence: verify(i.evidence) })),
-    importantClauses: result.importantClauses.slice(0, 20).map(i => ({ ...i, evidence: verify(i.evidence) })),
+    topRedFlags: result.topRedFlags.slice(0, 50).map(i => ({ ...i, evidence: verify(i.evidence) })),
+    importantClauses: result.importantClauses.slice(0, 100).map(i => ({ ...i, evidence: verify(i.evidence) })),
     rightsObligations: {
-      rights: result.rightsObligations.rights.slice(0, 20).map(i => ({ ...i, evidence: verify(i.evidence) })),
-      obligations: result.rightsObligations.obligations.slice(0, 20).map(i => ({ ...i, evidence: verify(i.evidence) })),
+      rights: result.rightsObligations.rights.slice(0, 100).map(i => ({ ...i, evidence: verify(i.evidence) })),
+      obligations: result.rightsObligations.obligations.slice(0, 100).map(i => ({ ...i, evidence: verify(i.evidence) })),
     },
-    importantDates: result.importantDates.slice(0, 20),
+    importantDates: result.importantDates.slice(0, 100),
     financialAnalysis: {
       ...result.financialAnalysis,
       financialRedFlags: dedupeStrings(result.financialAnalysis.financialRedFlags),
@@ -83,7 +83,7 @@ export function normalizeAnalysisResult(result: AdvancedAnalysisResult, document
       oneSidedProvisions: dedupeStrings(result.legalInsights.oneSidedProvisions),
     },
     conflictOfInterest: { ...result.conflictOfInterest, evidence: verify(result.conflictOfInterest?.evidence) },
-    favorableClauses: result.favorableClauses.slice(0, 20).map(i => ({ ...i, evidence: verify(i.evidence) })),
+    favorableClauses: result.favorableClauses.slice(0, 100).map(i => ({ ...i, evidence: verify(i.evidence) })),
     jurisdictionInsights: { ...result.jurisdictionInsights, evidence: verify(result.jurisdictionInsights?.evidence) }
   }
 }

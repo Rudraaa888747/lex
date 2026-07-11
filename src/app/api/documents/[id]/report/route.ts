@@ -1,3 +1,4 @@
+import { apiError } from "@/lib/api-error"
 import { auth } from "@/lib/auth-config"
 import { buildAnalysisReportPdf } from "@/lib/report"
 import { isPremiumPlan } from "@/lib/subscription"
@@ -62,7 +63,6 @@ export async function GET(
       },
     })
   } catch (error) {
-    console.error("[document report]", error)
-    return Response.json({ error: "Failed to generate report" }, { status: 500 })
+    return apiError(error, "Failed to generate report", 500)
   }
 }

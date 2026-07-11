@@ -121,6 +121,10 @@ NEXTAUTH_SECRET="your_super_secret_jwt_string"
 
 # AI Integration
 OPENROUTER_API_KEY="sk-or-v1-..."
+
+# Rate Limiting (Upstash Redis)
+UPSTASH_REDIS_REST_URL="https://..."
+UPSTASH_REDIS_REST_TOKEN="your_token_here"
 ```
 
 ### 4. Database Initialization
@@ -142,7 +146,8 @@ Navigate to `http://localhost:3000` to view the application.
 - **Strict Data Isolation** — Every database query is strictly scoped by `userId`.
 - **Isolated Processing** — Documents are processed in memory and never used for public model training.
 - **Type Safety** — The application guarantees 100% strict TypeScript compliance.
-- **Payload Sanitization** — API routes include strict character limits and content sanitization to prevent LLM prompt-injection and abuse.
+- **Payload Sanitization & Prompt-Injection Defense** — `validateContent()` acts as a quality and length gate. We enforce length caps and wrap context in strict XML-like delimiters to prevent prompt bleed. Structured output schemas serve as the primary defense against adversarial content generation.
+- **Tesseract.js Data** — We use Tesseract's built-in remote fetch from CDN for traineddata files to avoid bloating the repository. Files like `eng.traineddata` are explicitly gitignored.
 
 <br />
 

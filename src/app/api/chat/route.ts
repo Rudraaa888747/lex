@@ -1,7 +1,9 @@
+import { apiError } from "@/lib/api-error"
 import { NextRequest } from "next/server"
 import { auth } from "@/lib/auth-config"
 import { prisma } from "@/lib/database"
 import { chatWithDocument } from "@/services/ai.service"
+import { chatLimiter } from "@/lib/rate-limit"
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,6 +13,14 @@ export async function POST(request: NextRequest) {
     }
 
     const { message, documentId } = await request.json()
+
+    const { success, limit, remaining, reset } = await chatLimiter.limit(session.user.id)
+    if (!success) {
+      return Response.json(
+        { error: "Too many requests, please try again later." },
+        { status: 429, headers: { "Retry-After": Math.ceil((reset - Date.now()) / 1000).toString() } }
+      )
+    }
 
     if (!message || typeof message !== "string") {
       return Response.json({ error: "Message is required" }, { status: 400 })
@@ -36,7 +46,6 @@ export async function POST(request: NextRequest) {
 
     return Response.json({ response, success: true })
   } catch (error) {
-    console.error("Chat error:", error)
-    return Response.json({ error: "Chat failed" }, { status: 500 })
+    return apiError(error, "Chat failed", 500)
   }
 }

@@ -25,8 +25,15 @@ interface DocumentItem {
   title: string
 }
 
+interface ComparisonClause {
+  clauseName: string
+  comparison: string
+  evidenceDoc1?: string | null
+  evidenceDoc2?: string | null
+}
+
 interface ComparisonResult {
-  clauses?: Record<string, string>
+  clauses?: Record<string, string> | ComparisonClause[]
   risks?: string[]
   differences?: string[]
   summary?: string
@@ -421,17 +428,32 @@ export function CompareClient({ initialDocuments }: { initialDocuments: Document
           )}
 
           {/* Clauses */}
-          {result.clauses && Object.keys(result.clauses).length > 0 && (
+          {result.clauses && (Array.isArray(result.clauses) ? result.clauses.length > 0 : Object.keys(result.clauses).length > 0) && (
             <ResultSection icon={GitCompare} title="Clause Comparison">
               <div className="space-y-2.5">
-                {Object.entries(result.clauses).map(([key, value]) => (
-                  <div key={key} className="p-4 rounded-xl bg-card border border-border shadow-[var(--shadow-sm)]">
-                    <p className="text-[10px] font-bold text-foreground uppercase tracking-wider mb-1.5">
-                      {key.replace(/([A-Z])/g, " $1").trim()}
-                    </p>
-                    <p className="text-sm text-foreground/80 leading-relaxed">{value}</p>
-                  </div>
-                ))}
+                {Array.isArray(result.clauses)
+                  ? result.clauses.map((clause, idx) => (
+                      <div key={idx} className="p-4 rounded-xl bg-card border border-border shadow-[var(--shadow-sm)]">
+                        <p className="text-[10px] font-bold text-foreground uppercase tracking-wider mb-1.5">
+                          {clause.clauseName}
+                        </p>
+                        <p className="text-sm text-foreground/80 leading-relaxed">{clause.comparison}</p>
+                        {(clause.evidenceDoc1 || clause.evidenceDoc2) && (
+                          <div className="mt-3 space-y-1.5 border-t border-border pt-3">
+                            {clause.evidenceDoc1 && <p className="text-xs text-muted-foreground italic border-l-2 border-[var(--color-primary)] pl-2">Doc 1: {clause.evidenceDoc1}</p>}
+                            {clause.evidenceDoc2 && <p className="text-xs text-muted-foreground italic border-l-2 border-[var(--color-primary)] pl-2">Doc 2: {clause.evidenceDoc2}</p>}
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  : Object.entries(result.clauses).map(([key, value]) => (
+                      <div key={key} className="p-4 rounded-xl bg-card border border-border shadow-[var(--shadow-sm)]">
+                        <p className="text-[10px] font-bold text-foreground uppercase tracking-wider mb-1.5">
+                          {key.replace(/([A-Z])/g, " $1").trim()}
+                        </p>
+                        <p className="text-sm text-foreground/80 leading-relaxed">{value as string}</p>
+                      </div>
+                    ))}
               </div>
             </ResultSection>
           )}

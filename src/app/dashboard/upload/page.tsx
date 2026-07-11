@@ -8,7 +8,7 @@ import { Upload, FileText, File, Image, CheckCircle, AlertCircle, X, ArrowRight,
 import { showToast } from "@/components/premium-toast"
 
 const ALLOWED_EXTENSIONS = ["pdf", "docx", "txt", "png", "jpg", "jpeg"]
-const MAX_FILE_SIZE = 50 * 1024 * 1024
+const MAX_FILE_SIZE = 30 * 1024 * 1024
 
 const LANGUAGES = [
   { code: "EN", label: "English", native: "English" },

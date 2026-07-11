@@ -3,6 +3,9 @@ import { auth } from "@/lib/auth-config"
 import { prisma } from "@/lib/database"
 import { extractDocumentTextFromBuffer } from "@/lib/document-processing"
 import { PRIVATE_DOCUMENT_BUCKET, removeStoredDocuments, supabaseAdmin } from "@/lib/supabase-admin"
+import { PLAN_LIMITS } from "@/lib/subscription"
+import { documentUploadLimiter } from "@/lib/rate-limit"
+import { apiError } from "@/lib/api-error"
 
 const IMAGE_EXTENSIONS = new Set(["png", "jpg", "jpeg"])
 
@@ -13,7 +16,31 @@ export async function POST(request: NextRequest) {
       return Response.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    const { success, limit: rateLimit, remaining, reset } = await documentUploadLimiter.limit(session.user.id)
+    if (!success) {
+      return Response.json(
+        { error: "Too many requests, please try again later." },
+        { status: 429, headers: { "Retry-After": Math.ceil((reset - Date.now()) / 1000).toString() } }
+      )
+    }
+
     const formData = await request.formData()
+
+    const startOfMonth = new Date()
+    startOfMonth.setDate(1)
+    startOfMonth.setHours(0, 0, 0, 0)
+
+    const userPlan = session.user.plan || "FREE"
+    const limit = PLAN_LIMITS[userPlan] ?? PLAN_LIMITS.FREE
+
+    const currentMonthCount = await prisma.document.count({
+      where: { userId: session.user.id, createdAt: { gte: startOfMonth } }
+    })
+
+    if (currentMonthCount >= limit) {
+      return Response.json({ error: `You've reached your monthly document limit for the ${userPlan} plan. Upgrade to upload more.` }, { status: 403 })
+    }
+
     const file = formData.get("file") as File
     const language = formData.get("language") as string
 
@@ -119,7 +146,6 @@ export async function POST(request: NextRequest) {
 
     return Response.json({ document: updatedDocument, success: true }, { status: 201 })
   } catch (error) {
-    console.error("Upload error:", error)
-    return Response.json({ error: "Upload failed" }, { status: 500 })
+    return apiError(error, "Upload failed", 500)
   }
 }

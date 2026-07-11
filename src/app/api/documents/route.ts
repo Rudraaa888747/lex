@@ -1,3 +1,4 @@
+import { apiError } from "@/lib/api-error"
 import { auth } from "@/lib/auth-config"
 import { prisma } from "@/lib/database"
 
@@ -38,7 +39,6 @@ export async function GET() {
       recentActivity: documents.slice(0, 10),
     })
   } catch (error) {
-    console.error("Documents fetch error:", error)
-    return Response.json({ error: "Internal server error" }, { status: 500 })
+    return apiError(error, "Internal server error", 500)
   }
 }

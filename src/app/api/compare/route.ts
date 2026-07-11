@@ -1,7 +1,9 @@
+import { apiError } from "@/lib/api-error"
 import { NextRequest } from "next/server"
 import { auth } from "@/lib/auth-config"
 import { prisma } from "@/lib/database"
 import { compareDocuments } from "@/services/ai.service"
+import { compareLimiter } from "@/lib/rate-limit"
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,6 +13,14 @@ export async function POST(request: NextRequest) {
     }
 
     const { documentIds } = await request.json()
+
+    const { success, limit, remaining, reset } = await compareLimiter.limit(session.user.id)
+    if (!success) {
+      return Response.json(
+        { error: "Too many requests, please try again later." },
+        { status: 429, headers: { "Retry-After": Math.ceil((reset - Date.now()) / 1000).toString() } }
+      )
+    }
 
     if (!documentIds || documentIds.length < 2) {
       return Response.json({ error: "At least 2 document IDs required" }, { status: 400 })
@@ -38,7 +48,6 @@ export async function POST(request: NextRequest) {
 
     return Response.json({ result, success: true })
   } catch (error) {
-    console.error("Compare error:", error)
-    return Response.json({ error: "Comparison failed" }, { status: 500 })
+    return apiError(error, "Comparison failed", 500)
   }
 }

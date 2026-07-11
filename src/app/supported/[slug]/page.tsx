@@ -85,7 +85,7 @@ export default function DocumentTypePage() {
       />
 
       <div className="relative z-10 max-w-[var(--max-w)] mx-auto px-4 sm:px-6 py-10 sm:py-16 space-y-6">
-        <div className="animate-in mt-4 sm:mt-8 mb-4">
+        <div className="animate-in mt-16 sm:mt-8 mb-4">
           <BackToWebsite className="justify-start mt-0 mb-0" text="Back to Home" />
         </div>
 

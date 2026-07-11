@@ -108,11 +108,11 @@ export default function DocumentDetailsPage() {
             setAnalyzing(false)
             clearInterval(interval)
             showToast("Analysis complete", "success")
-          }
-          if (data.document?.status === "FAILED") {
+          } else if (data.document?.status === "FAILED") {
+            setDoc(data.document)
             setAnalyzing(false)
             clearInterval(interval)
-            showToast("Analysis failed", "error")
+            showToast("Analysis failed: " + (data.document?.errorMessage || "Unknown error"), "error")
           }
         }
       } catch { /* silent */ }
@@ -393,7 +393,7 @@ export default function DocumentDetailsPage() {
                     <li key={i} className="flex items-start gap-3">
                       <CheckCircle className="w-5 h-5 text-[#16a34a] shrink-0 mt-0.5" />
                       <div className="flex-1">
-                        <span className="text-[0.9rem] text-foreground leading-relaxed block font-medium">{item.clause || item.explanation || item.right}</span>
+                        <span className="text-[0.9rem] text-foreground leading-relaxed block font-medium">{(item.clause && !/^\d+\.?$/.test(item.clause.trim()) ? item.clause : null) || item.explanation || (item as any).right}</span>
                         {item.evidence && <p className="text-xs text-muted-foreground mt-1.5 italic border-l-2 border-border pl-2">Evidence: {item.evidence}</p>}
                       </div>
                     </li>
@@ -415,7 +415,7 @@ export default function DocumentDetailsPage() {
                     <li key={i} className="flex items-start gap-3">
                       <AlertTriangle className="w-5 h-5 text-[#d97706] shrink-0 mt-0.5" />
                       <div className="flex-1">
-                        <span className="text-[0.9rem] text-foreground leading-relaxed block font-medium">{item.clause || item.explanation || item.obligation}</span>
+                        <span className="text-[0.9rem] text-foreground leading-relaxed block font-medium">{(item.clause && !/^\d+\.?$/.test(item.clause.trim()) ? item.clause : null) || item.explanation || (item as any).obligation}</span>
                         {item.evidence && <p className="text-xs text-muted-foreground mt-1.5 italic border-l-2 border-border pl-2">Evidence: {item.evidence}</p>}
                       </div>
                     </li>
@@ -599,8 +599,12 @@ export default function DocumentDetailsPage() {
           <div className="w-20 h-20 rounded-2xl bg-red-600/10 flex items-center justify-center mx-auto mb-6 shadow-sm">
             <XCircle className="w-10 h-10 text-red-600" />
           </div>
-          <h2 className="text-heading text-xl mb-3 text-[#7f1d1d]" style={{ fontFamily: "var(--font-display)" }}>Extraction Failed</h2>
-          <p className="text-[0.95rem] text-[#991b1b]/80 max-w-sm mx-auto">We couldn't extract readable text from this document. Please ensure the file contains selectable text and try again.</p>
+          <h2 className="text-heading text-xl mb-3 text-[#7f1d1d]" style={{ fontFamily: "var(--font-display)" }}>Analysis Failed</h2>
+          <p className="text-[0.95rem] text-[#991b1b]/80 max-w-sm mx-auto mb-8">{(doc as any).errorMessage || "We couldn't extract readable text or analyze this document. Please try again."}</p>
+          <Button variant="gradient" size="lg" onClick={handleStartAnalysis} loading={analyzing} className="px-8 bg-red-600 hover:bg-red-700">
+            <Brain className="w-4 h-4 mr-2" />
+            {analyzing ? "Retrying…" : "Retry Analysis"}
+          </Button>
         </div>
       ) : analyzing ? (
         <div className="glass-default rounded-3xl border border-border"

@@ -4,6 +4,7 @@ import Credentials from "next-auth/providers/credentials"
 import { compare } from "bcryptjs"
 import { prisma } from "./database"
 import { touchCurrentSession } from "./session-metadata"
+import { getRequestMetadata } from "./request-metadata"
 
 declare module "next-auth" {
   interface Session {
@@ -106,13 +107,15 @@ const nextAuth = NextAuth({
           token.sessionToken = sessionToken
           const expires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
           
+          const reqMeta = await getRequestMetadata()
+          
           await prisma.session.create({
             data: {
               sessionToken,
               userId: authUser.id,
               expires,
-              userAgent: "Unknown",
-              ip: "Unknown",
+              userAgent: reqMeta.userAgent,
+              ip: reqMeta.ip,
             }
           })
         }
