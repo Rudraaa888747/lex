@@ -83,51 +83,54 @@ export async function POST(
       try {
         const analysisData = await analyzeDocument(content, document.title, document.language)
 
-        await prisma.$transaction(async (tx) => {
-          const existing = await tx.analysis.findUnique({
-            where: { documentId: id },
-          })
+        await prisma.$transaction(
+          async (tx) => {
+            const existing = await tx.analysis.findUnique({
+              where: { documentId: id },
+            })
 
-          if (existing) {
+            if (existing) {
+              await tx.document.updateMany({
+                where: { id, userId: sessionUserId! },
+                data: { status: "COMPLETED" },
+              })
+              return existing
+            }
+
+            const created = await tx.analysis.create({
+              data: {
+                documentId: id,
+                userId: sessionUserId!,
+                summary: analysisData.executiveSummary || "",
+                plainLanguage: analysisData.plainLanguage || "",
+                keyClauses: JSON.stringify(analysisData.importantClauses || []),
+                rightsObligations: JSON.stringify(analysisData.rightsObligations || {}),
+                importantDates: JSON.stringify(analysisData.importantDates || []),
+                financialTerms: JSON.stringify(analysisData.financialAnalysis || {}),
+                riskAssessment: JSON.stringify(analysisData.topRedFlags || []),
+                topRedFlags: JSON.stringify(analysisData.topRedFlags || []),
+                importantClauses: JSON.stringify(analysisData.importantClauses || []),
+                beforeYouSign: JSON.stringify(analysisData.beforeYouSign || {}),
+                legalInsights: JSON.stringify(analysisData.legalInsights || {}),
+                contractScore: JSON.stringify(buildContractScoreCard(analysisData.contractScore)),
+                conflictOfInterest: JSON.stringify(analysisData.conflictOfInterest || {}),
+                favorableClauses: JSON.stringify(analysisData.favorableClauses || []),
+                jurisdictionInsights: JSON.stringify(analysisData.jurisdictionInsights || []),
+                language: document.language || "EN",
+                status: "COMPLETED",
+                tokensUsed: 1500,
+              },
+            })
+
             await tx.document.updateMany({
-              where: { id, userId: sessionUserId! },
+              where: { id, userId: sessionUserId!, status: "ANALYZING" },
               data: { status: "COMPLETED" },
             })
-            return existing
-          }
 
-          const created = await tx.analysis.create({
-            data: {
-              documentId: id,
-              userId: sessionUserId!,
-              summary: analysisData.executiveSummary || "",
-              plainLanguage: analysisData.plainLanguage || "",
-              keyClauses: JSON.stringify(analysisData.importantClauses || []),
-              rightsObligations: JSON.stringify(analysisData.rightsObligations || {}),
-              importantDates: JSON.stringify(analysisData.importantDates || []),
-              financialTerms: JSON.stringify(analysisData.financialAnalysis || {}),
-              riskAssessment: JSON.stringify(analysisData.topRedFlags || []),
-              topRedFlags: JSON.stringify(analysisData.topRedFlags || []),
-              importantClauses: JSON.stringify(analysisData.importantClauses || []),
-              beforeYouSign: JSON.stringify(analysisData.beforeYouSign || {}),
-              legalInsights: JSON.stringify(analysisData.legalInsights || {}),
-              contractScore: JSON.stringify(buildContractScoreCard(analysisData.contractScore)),
-              conflictOfInterest: JSON.stringify(analysisData.conflictOfInterest || {}),
-              favorableClauses: JSON.stringify(analysisData.favorableClauses || []),
-              jurisdictionInsights: JSON.stringify(analysisData.jurisdictionInsights || {}),
-              language: document.language || "EN",
-              status: "COMPLETED",
-              tokensUsed: 1500,
-            },
-          })
-
-          await tx.document.updateMany({
-            where: { id, userId: sessionUserId!, status: "ANALYZING" },
-            data: { status: "COMPLETED" },
-          })
-
-          return created
-        })
+            return created
+          },
+          { maxWait: 10000, timeout: 15000 }
+        )
       } catch (error) {
         console.error("[Analyze Background Error]:", error)
         const msg = error instanceof Error ? error.message : "AI service connection was interrupted, please try again"
