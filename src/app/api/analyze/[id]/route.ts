@@ -115,7 +115,7 @@ export async function POST(
                 contractScore: JSON.stringify(buildContractScoreCard(analysisData.contractScore)),
                 conflictOfInterest: JSON.stringify(analysisData.conflictOfInterest || {}),
                 favorableClauses: JSON.stringify(analysisData.favorableClauses || []),
-                jurisdictionInsights: JSON.stringify(analysisData.jurisdictionInsights || []),
+                jurisdictionInsights: JSON.stringify(analysisData.jurisdictionInsights || {}),
                 language: document.language || "EN",
                 status: "COMPLETED",
                 tokensUsed: 1500,
