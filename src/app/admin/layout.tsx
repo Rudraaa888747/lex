@@ -23,9 +23,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const { data: session, status } = useSession()
   const pathname = usePathname()
 
+  // If we are already on the admin login page, just render it without the sidebar
+  if (pathname === "/admin/login") {
+    return (
+      <div className="min-h-screen bg-background">
+        {children}
+      </div>
+    )
+  }
+
+  // Strict check: ONLY this exact email is allowed in the admin panel
+  const isAuthorized = status === "authenticated" && session?.user?.email === "rudrachokshi3@gmail.com"
+
   // Avoid redirecting while loading, but redirect if strictly unauthenticated or unauthorized
-  if (status === "unauthenticated" || (status === "authenticated" && session?.user?.role !== "ADMIN")) {
-    redirect("/dashboard")
+  if (status === "unauthenticated" || (status === "authenticated" && !isAuthorized)) {
+    redirect("/admin/login")
   }
 
   const isLoading = status === "loading"

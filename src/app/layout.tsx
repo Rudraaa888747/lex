@@ -28,24 +28,25 @@ const ibmPlexMono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Lex | AI-Powered Legal Document Analyzer",
+    default: "Lex | AI Legal Document Analyzer & Contract Risk Detector",
     template: "%s | Lex",
   },
-  description: "Upload, analyze, and understand legal documents with AI. Detect risks, identify clauses, and get plain-language explanations.",
+  description: "Understand every contract in seconds. Lex AI simplifies legal jargon, identifies hidden risks, and provides clause-by-clause breakdowns for NDAs, agreements, and policies.",
+  keywords: ["AI contract analyzer", "legal document AI", "contract risk detection", "AI for legal documents", "clause breakdown AI", "Next.js legal tech"],
   alternates: {
     canonical: "/",
   },
   openGraph: {
-    title: "Lex | AI-Powered Legal Document Analyzer",
-    description: "Upload, analyze, and understand legal documents with AI. Detect risks, identify clauses, and get plain-language explanations.",
+    title: "Lex | AI Legal Document Analyzer & Contract Risk Detector",
+    description: "Understand every contract in seconds. Lex AI simplifies legal jargon, identifies hidden risks, and provides clause-by-clause breakdowns for NDAs, agreements, and policies.",
     url: siteUrl,
     siteName: "Lex",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Lex | AI-Powered Legal Document Analyzer",
-    description: "Upload, analyze, and understand legal documents with AI. Detect risks, identify clauses, and get plain-language explanations.",
+    title: "Lex | AI Legal Document Analyzer & Contract Risk Detector",
+    description: "Understand every contract in seconds. Lex AI simplifies legal jargon, identifies hidden risks, and provides clause-by-clause breakdowns for NDAs, agreements, and policies.",
   },
 }
 

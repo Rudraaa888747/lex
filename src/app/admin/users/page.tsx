@@ -59,6 +59,27 @@ export default function AdminUsersPage() {
     }
   }
 
+  const updatePlan = async (userId: string, plan: string) => {
+    setUpdating(userId)
+    try {
+      const res = await fetch(`/api/admin/users/${userId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan }),
+      })
+      if (res.ok) {
+        showToast("Plan updated successfully", "success")
+        setUsers((prev) => prev.map((u) => u.id === userId ? { ...u, plan } : u))
+      } else {
+        showToast("Failed to update plan", "error")
+      }
+    } catch {
+      showToast("Failed to update plan", "error")
+    } finally {
+      setUpdating(null)
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -114,7 +135,19 @@ export default function AdminUsersPage() {
                       </div>
                     </td>
                     <td className="p-4"><Badge variant={user.role === "ADMIN" ? "default" : "secondary"} size="sm">{user.role}</Badge></td>
-                    <td className="p-4"><span className="text-sm font-medium text-foreground">{user.plan || "FREE"}</span></td>
+                    <td className="p-4">
+                      <select 
+                        value={user.plan || "FREE"}
+                        onChange={(e) => updatePlan(user.id, e.target.value)}
+                        disabled={updating === user.id}
+                        className="bg-card border border-border rounded-lg px-2 py-1 text-sm font-medium text-foreground focus:ring-2 focus:ring-primary focus:outline-none cursor-pointer"
+                      >
+                        <option value="FREE">FREE</option>
+                        <option value="PROFESSIONAL">PROFESSIONAL</option>
+                        <option value="BUSINESS">BUSINESS</option>
+                        <option value="ENTERPRISE">ENTERPRISE</option>
+                      </select>
+                    </td>
                     <td className="p-4"><span className="text-sm text-muted-foreground font-medium">{formatDate(user.createdAt)}</span></td>
                     <td className="p-4">
                       <Badge variant={user.suspended ? "danger" : "success"} size="sm">

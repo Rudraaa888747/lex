@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Upload, FileText, File, Image, CheckCircle, AlertCircle, X, ArrowRight, Loader2 } from "lucide-react"
 import { showToast } from "@/components/premium-toast"
+import { useSession } from "next-auth/react"
+import { LimitReachedModal } from "@/components/LimitReachedModal"
 
 const ALLOWED_EXTENSIONS = ["pdf", "docx", "txt", "png", "jpg", "jpeg"]
 const MAX_FILE_SIZE = 30 * 1024 * 1024
@@ -39,11 +41,13 @@ function getFileType(name: string): string {
 
 export default function UploadPage() {
   const router = useRouter()
+  const { data: session } = useSession()
   const [dragActive, setDragActive] = useState(false)
   const [files, setFiles] = useState<File[]>([])
   const [uploading, setUploading] = useState(false)
   const [progress, setProgress] = useState(0)
   const [language, setLanguage] = useState<string>("")
+  const [showLimitModal, setShowLimitModal] = useState(false)
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" })
@@ -118,6 +122,9 @@ export default function UploadPage() {
         setTimeout(() => {
           router.push(`/dashboard/documents/${data.document.id}`)
         }, 500)
+      } else if (res.status === 403 && data.error?.includes("limit")) {
+        setShowLimitModal(true)
+        setProgress(0)
       } else {
         showToast(data.error || "Upload failed", "error")
         setProgress(0)
@@ -260,6 +267,12 @@ export default function UploadPage() {
           Consult a qualified legal professional before making legal decisions.
         </p>
       </div>
+
+      <LimitReachedModal 
+        isOpen={showLimitModal} 
+        onClose={() => setShowLimitModal(false)} 
+        userPlan={session?.user?.plan || "FREE"} 
+      />
     </div>
   )
 }

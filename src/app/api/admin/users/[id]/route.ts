@@ -9,7 +9,7 @@ export async function PATCH(
 ) {
   try {
     const session = await auth()
-    if (!session || session.user?.role !== "ADMIN") {
+    if (!session || session.user?.email !== "rudrachokshi3@gmail.com") {
       return Response.json({ error: "Unauthorized" }, { status: 401 })
     }
 

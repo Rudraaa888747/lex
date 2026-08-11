@@ -4,6 +4,7 @@ import { useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { PaymentModal } from "@/components/PaymentModal"
 import { CheckCircle, ArrowRight, Sparkles, ChevronDown } from "lucide-react"
 
 const plans = [
@@ -22,6 +23,15 @@ const faqs = [
 
 export default function PricingPage() {
   const [openIndex, setOpenIndex] = useState<number | null>(null)
+  const [modalOpen, setModalOpen] = useState(false)
+  const [selectedPlan, setSelectedPlan] = useState<{name: string, price: string} | null>(null)
+  
+  const handleUpgradeClick = (e: React.MouseEvent, plan: {name: string, price: string}) => {
+    if (plan.name === "Enterprise" || plan.name === "Starter") return; // Starter is free, Enterprise is custom
+    e.preventDefault();
+    setSelectedPlan(plan);
+    setModalOpen(true);
+  }
   
   return (
     <div className="py-20 lg:py-28">
@@ -55,7 +65,10 @@ export default function PricingPage() {
                   </li>
                 ))}
               </ul>
-              <Link href={plan.name === "Enterprise" ? "/pricing" : "/register"}>
+              <Link 
+                href={plan.name === "Enterprise" ? "/contact-sales" : plan.name === "Starter" ? "/register" : "#"}
+                onClick={(e) => handleUpgradeClick(e, plan)}
+              >
                 <Button variant={plan.popular ? "gradient" : "outline"} className="w-full">{plan.cta}<ArrowRight className="w-4 h-4" /></Button>
               </Link>
             </div>
@@ -82,6 +95,15 @@ export default function PricingPage() {
           </div>
         </div>
       </div>
+      
+      {selectedPlan && (
+        <PaymentModal 
+          isOpen={modalOpen} 
+          onClose={() => setModalOpen(false)} 
+          planName={selectedPlan.name} 
+          amount={selectedPlan.price} 
+        />
+      )}
     </div>
   )
 }

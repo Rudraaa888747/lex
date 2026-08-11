@@ -167,6 +167,9 @@ export function SiteHeader() {
                   <Link href="/faq" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
                     FAQ
                   </Link>
+                  <Link href="/blog" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+                    Blog
+                  </Link>
                 </div>
               )}
 
@@ -267,6 +270,9 @@ export function SiteHeader() {
                 </Link>
                 <Link href="/faq" className="block px-3 py-2 text-sm rounded-xl text-foreground hover:bg-[rgba(0,0,0,0.04)]" onClick={closeMobile}>
                   FAQ
+                </Link>
+                <Link href="/blog" className="block px-3 py-2 text-sm rounded-xl text-foreground hover:bg-[rgba(0,0,0,0.04)]" onClick={closeMobile}>
+                  Blog
                 </Link>
                 {session?.user ? (
                   <>

@@ -8,6 +8,7 @@ import {
   MessageSquare, Globe, Download, Lock, Sparkles, Server,
   Eye, Key, Zap
 } from "lucide-react"
+import { PaymentModal } from "@/components/PaymentModal"
 
 const documentTypes = [
   { icon: FileText, label: "Rental Agreements", accent: "var(--color-foreground)" },
@@ -105,9 +106,36 @@ const faqs = [
 
 export default function LandingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null)
+  const [modalOpen, setModalOpen] = useState(false)
+  const [selectedPlan, setSelectedPlan] = useState<{name: string, price: string} | null>(null)
+  
+  const handleUpgradeClick = (e: React.MouseEvent, plan: {name: string, price: string}) => {
+    if (plan.name === "Enterprise" || plan.name === "Starter") return; // Starter is free, Enterprise is custom
+    e.preventDefault();
+    setSelectedPlan(plan);
+    setModalOpen(true);
+  }
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Lex AI",
+    "operatingSystem": "Web",
+    "applicationCategory": "BusinessApplication",
+    "description": "An enterprise-grade AI-powered legal document analyzer designed to simplify complex legal jargon and identify critical risks in contracts.",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "INR"
+    }
+  }
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
 
       {/* ── HERO ─────────────────────────────────────────────────────────── */}
       <section className="hero">
@@ -361,7 +389,11 @@ export default function LandingPage() {
                     </li>
                   ))}
                 </ul>
-                <Link href="/register" className={`btn-plan ${plan.popular ? 'solid' : 'outline'}`}>
+                <Link 
+                  href={plan.name === "Enterprise" ? "/contact-sales" : plan.name === "Starter" ? "/register" : "#"} 
+                  className={`btn-plan ${plan.popular ? 'solid' : 'outline'}`}
+                  onClick={(e) => handleUpgradeClick(e, plan)}
+                >
                   {plan.cta}
                 </Link>
               </div>
@@ -412,6 +444,15 @@ export default function LandingPage() {
         <p className="mb-4 text-xs font-semibold text-[var(--danger)] bg-[var(--danger)]/10 inline-block px-4 py-2 rounded-full border border-[var(--danger)]/20">⚠ The information provided on this page is for educational purposes only and does not constitute legal advice. Always consult a qualified legal professional for advice specific to your situation.</p>
         <p>© <span suppressHydrationWarning>{new Date().getFullYear()}</span> Lex AI. All rights reserved.</p>
       </footer>
+      
+      {selectedPlan && (
+        <PaymentModal 
+          isOpen={modalOpen} 
+          onClose={() => setModalOpen(false)} 
+          planName={selectedPlan.name} 
+          amount={selectedPlan.price} 
+        />
+      )}
     </>
   )
 }
