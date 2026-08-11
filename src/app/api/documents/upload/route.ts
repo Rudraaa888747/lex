@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server"
+import { NextRequest, after } from "next/server"
 import { auth } from "@/lib/auth-config"
 import { prisma } from "@/lib/database"
 import { extractDocumentTextFromBuffer } from "@/lib/document-processing"
@@ -6,6 +6,8 @@ import { PRIVATE_DOCUMENT_BUCKET, removeStoredDocuments, supabaseAdmin } from "@
 import { PLAN_LIMITS } from "@/lib/subscription"
 import { documentUploadLimiter } from "@/lib/rate-limit"
 import { apiError } from "@/lib/api-error"
+
+export const maxDuration = 60
 
 const IMAGE_EXTENSIONS = new Set(["png", "jpg", "jpeg"])
 
@@ -90,61 +92,67 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    try {
-      const { text: extractedText, isOcrFallback } = await extractDocumentTextFromBuffer({
-        buffer: fileBuffer,
-        fileExtension: ext,
-        language,
-      })
+    const userId = session.user.id
+    const documentId = document.id
 
-      if (!extractedText) {
-        throw new Error("No readable text could be extracted from the uploaded document")
-      }
-
-      const { validateContent } = await import("@/services/ai.service")
-      const isValid = validateContent(extractedText)
-
-      if (!isValid) {
-        throw new Error("Document contains no readable text. We tried extracting text and running OCR, but the quality is too poor. Please provide a clearer document.")
-      }
-
-      const { error: uploadError } = await supabaseAdmin.storage
-        .from(PRIVATE_DOCUMENT_BUCKET)
-        .upload(objectPath, fileBuffer, {
-          contentType: file.type,
-          upsert: false,
+    // FIRE AND FORGET THE EXTRACTION
+    const processUpload = async () => {
+      try {
+        const { text: extractedText, isOcrFallback } = await extractDocumentTextFromBuffer({
+          buffer: fileBuffer,
+          fileExtension: ext,
+          language,
         })
 
-      if (uploadError) {
-        throw uploadError
+        if (!extractedText) {
+          throw new Error("No readable text could be extracted from the uploaded document")
+        }
+
+        const { validateContent } = await import("@/services/ai.service")
+        const isValid = validateContent(extractedText)
+
+        if (!isValid) {
+          throw new Error("Document contains no readable text. We tried extracting text and running OCR, but the quality is too poor. Please provide a clearer document.")
+        }
+
+        const { error: uploadError } = await supabaseAdmin.storage
+          .from(PRIVATE_DOCUMENT_BUCKET)
+          .upload(objectPath, fileBuffer, {
+            contentType: file.type,
+            upsert: false,
+          })
+
+        if (uploadError) {
+          throw uploadError
+        }
+
+        await prisma.document.updateMany({
+          where: { id: documentId, userId },
+          data: {
+            content: extractedText,
+            status: "READY_FOR_ANALYSIS",
+          },
+        })
+      } catch (error) {
+        console.error("[Upload Background Error]:", error)
+        const msg = error instanceof Error ? error.message : "Document processing failed"
+
+        await prisma.document.updateMany({
+          where: { id: documentId, userId },
+          data: { status: "FAILED", errorMessage: msg },
+        }).catch(() => {})
+
+        try {
+          await removeStoredDocuments([objectPath])
+        } catch (cleanupError) {
+          console.error("Storage cleanup error after failed processing:", cleanupError)
+        }
       }
-
-      await prisma.document.update({
-        where: { id: document.id },
-        data: {
-          content: extractedText,
-          status: "READY_FOR_ANALYSIS",
-        },
-      })
-    } catch (error) {
-      await prisma.document.update({
-        where: { id: document.id },
-        data: { status: "FAILED" },
-      })
-
-      try {
-        await removeStoredDocuments([objectPath])
-      } catch (cleanupError) {
-        console.error("Storage cleanup error after failed processing:", cleanupError)
-      }
-
-      throw error
     }
 
-    // Re-fetch document to return the updated content
-    const updatedDocument = await prisma.document.findUnique({ where: { id: document.id } })
+    after(processUpload)
 
-    return Response.json({ document: updatedDocument, success: true }, { status: 201 })
+    return Response.json({ document, success: true, status: "PROCESSING" }, { status: 201 })
   } catch (error) {
     return apiError(error, "Upload failed", 500)
   }

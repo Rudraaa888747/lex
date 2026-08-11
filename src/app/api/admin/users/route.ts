@@ -5,7 +5,7 @@ import { prisma } from "@/lib/database"
 export async function GET() {
   try {
     const session = await auth()
-    if (!session || session.user?.email !== "rudrachokshi3@gmail.com") {
+    if (!session || session.user?.role !== "ADMIN") {
       return Response.json({ error: "Unauthorized" }, { status: 401 })
     }
 

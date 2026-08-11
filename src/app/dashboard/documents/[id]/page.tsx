@@ -95,6 +95,31 @@ export default function DocumentDetailsPage() {
   }, [params.id])
 
   useEffect(() => {
+    if (!doc || !(doc.status === "PROCESSING" || doc.status === "OCR_PROCESSING")) return
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/documents/${params.id}`)
+        if (res.ok) {
+          const data = await res.json()
+          if (data.document) {
+            setDoc(data.document)
+            setAnalysis(data.analysis)
+            if (data.document.status !== "PROCESSING" && data.document.status !== "OCR_PROCESSING") {
+              clearInterval(interval)
+              if (data.document.status === "FAILED") {
+                showToast("Document processing failed: " + (data.document.errorMessage || "Unknown error"), "error")
+              } else if (data.document.status === "READY_FOR_ANALYSIS") {
+                showToast("Document ready for analysis", "success")
+              }
+            }
+          }
+        }
+      } catch { /* silent */ }
+    }, 3000)
+    return () => clearInterval(interval)
+  }, [params.id, doc?.status])
+
+  useEffect(() => {
     if (!analyzing) return
     const interval = setInterval(async () => {
       try {

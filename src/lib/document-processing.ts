@@ -71,10 +71,16 @@ async function extractTextFromPdf(buffer: Buffer, language: string) {
     const imageBuffers = await extractImagesFromPdfBuffer(buffer)
     let ocrText = ""
 
-    // Process up to first 10 images to cap processing time
-    for (const imgBuffer of imageBuffers) {
-      const pageResult = await extractTextFromImage(imgBuffer, language)
-      ocrText += pageResult.text + "\n\n"
+    // Reuse a single worker across all pages instead of creating one per image
+    const worker = await createOcrWorker(language)
+
+    try {
+      for (const imgBuffer of imageBuffers) {
+        const pageText = await recognizeWithWorker(worker, imgBuffer)
+        ocrText += pageText + "\n\n"
+      }
+    } finally {
+      await worker.terminate()
     }
     
     ocrText = normalizeExtractedText(ocrText)
@@ -94,29 +100,33 @@ async function extractTextFromDocx(buffer: Buffer) {
   return { text: normalizeExtractedText(result.value), isOcrFallback: false }
 }
 
-async function extractTextFromImage(buffer: Buffer, language: string) {
+async function createOcrWorker(language: string) {
   const { createWorker } = await import("tesseract.js")
   const requestedLanguage = OCR_LANGUAGE_MAP[language] || OCR_LANGUAGE_MAP.EN
 
-  const runOcr = async (ocrLanguage: string) => {
-    const worker = await createWorker(ocrLanguage)
-
-    try {
-      const { data } = await worker.recognize(buffer)
-      return { text: normalizeExtractedText(data.text), isOcrFallback: true }
-    } finally {
-      await worker.terminate()
-    }
-  }
-
   try {
-    return await runOcr(requestedLanguage)
+    return await createWorker(requestedLanguage)
   } catch (error) {
     if (requestedLanguage === OCR_LANGUAGE_MAP.EN) {
       throw error
     }
 
-    return runOcr(OCR_LANGUAGE_MAP.EN)
+    return createWorker(OCR_LANGUAGE_MAP.EN)
+  }
+}
+
+async function recognizeWithWorker(worker: Awaited<ReturnType<typeof createOcrWorker>>, buffer: Buffer) {
+  const { data } = await worker.recognize(buffer)
+  return data.text
+}
+
+async function extractTextFromImage(buffer: Buffer, language: string) {
+  const worker = await createOcrWorker(language)
+
+  try {
+    return { text: normalizeExtractedText(await recognizeWithWorker(worker, buffer)), isOcrFallback: true }
+  } finally {
+    await worker.terminate()
   }
 }
 

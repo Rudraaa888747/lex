@@ -19,14 +19,6 @@ export default function AdminLoginPage() {
     e.preventDefault()
     setLoading(true)
 
-    // Strict client-side check just to prevent unnecessary API calls, 
-    // although the real check is in the layout/middleware.
-    if (form.email !== "rudrachokshi3@gmail.com") {
-      showToast("Access Denied. Unauthorized email.", "error")
-      setLoading(false)
-      return
-    }
-
     try {
       const result = await signIn("credentials", {
         email: form.email,

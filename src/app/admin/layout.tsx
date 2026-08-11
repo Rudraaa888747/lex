@@ -32,8 +32,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     )
   }
 
-  // Strict check: ONLY this exact email is allowed in the admin panel
-  const isAuthorized = status === "authenticated" && session?.user?.email === "rudrachokshi3@gmail.com"
+  // Strict check: only users with the ADMIN role are allowed in the admin panel
+  const isAuthorized = status === "authenticated" && session?.user?.role === "ADMIN"
 
   // Avoid redirecting while loading, but redirect if strictly unauthenticated or unauthorized
   if (status === "unauthenticated" || (status === "authenticated" && !isAuthorized)) {

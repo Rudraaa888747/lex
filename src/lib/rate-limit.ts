@@ -34,6 +34,23 @@ function inMemoryRateLimit(identifier: string, limit: number, windowMs: number):
 const hasUpstash = !!(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN)
 const redis = hasUpstash ? Redis.fromEnv() : null
 
+if (!hasUpstash && process.env.NODE_ENV === "production") {
+  console.error("[rate-limit] WARNING: Upstash Redis not configured in production — rate limiting is NOT reliable across multiple instances.")
+}
+
+// Periodically purge expired in-memory buckets so long-running processes don't grow unboundedly.
+// unref() keeps the timer from holding the Node process open during builds/short-lived invocations.
+const IN_MEMORY_SWEEP_INTERVAL_MS = 10 * 60 * 1000
+const tokenBucketSweepTimer = setInterval(() => {
+  const now = Date.now()
+  for (const [key, record] of tokenBuckets) {
+    if (record.resetTime < now) {
+      tokenBuckets.delete(key)
+    }
+  }
+}, IN_MEMORY_SWEEP_INTERVAL_MS)
+tokenBucketSweepTimer.unref?.()
+
 // Create a factory for ratelimiters
 export function createRateLimiter(limit: number, windowStr: `${number} ${"ms" | "s" | "m" | "h" | "d"}`) {
   if (hasUpstash && redis) {

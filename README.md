@@ -64,7 +64,7 @@
 ### AI & Processing
 | Category | Technology |
 |---|---|
-| AI Integration | OpenRouter (GPT-4o / Claude 3.5 Sonnet) via `@google/generative-ai` & `openai` SDKs |
+| AI Integration | OpenRouter (GPT-4o / Claude 3.5 Sonnet) via the `openai` SDK |
 | Document Parsing | `pdf-parse`, `pdf-lib`, `mammoth` (for DOCX) |
 | OCR | `tesseract.js` for scanned documents |
 
