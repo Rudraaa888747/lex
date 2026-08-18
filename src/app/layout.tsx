@@ -1,8 +1,7 @@
 import type { Metadata } from "next"
 import "./globals.css"
 import { AppWrapper } from "@/components/app-wrapper"
-import { SiteHeader } from "@/components/layout/SiteHeader"
-import { SiteFooter } from "@/components/layout/SiteFooter"
+
 import { siteUrl } from "@/lib/site"
 import { Fraunces, DM_Sans, IBM_Plex_Mono } from "next/font/google"
 
@@ -60,9 +59,7 @@ export default function RootLayout({
     <html lang="en" className={`h-full antialiased ${fraunces.variable} ${dmSans.variable} ${ibmPlexMono.variable}`} suppressHydrationWarning>
       <body className="min-h-full flex flex-col">
         <AppWrapper>
-          <SiteHeader />
-          <main className="flex-1 pt-24 lg:pt-32 safe-top">{children}</main>
-          <SiteFooter />
+          {children}
         </AppWrapper>
       </body>
     </html>

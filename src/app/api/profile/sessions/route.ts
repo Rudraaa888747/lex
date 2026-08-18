@@ -24,7 +24,7 @@ export async function GET() {
 
     const currentToken = session.sessionToken
 
-    const formatted = dbSessions.map((s) => ({
+    const formatted = dbSessions.map((s: { id: string; userAgent: string | null; ip: string | null; createdAt: Date; expires: Date; lastActive: Date | null; sessionToken: string; }) => ({
       id: s.id,
       device: parseDevice(s.userAgent),
       userAgent: s.userAgent,

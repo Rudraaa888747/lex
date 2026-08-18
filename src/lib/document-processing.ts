@@ -30,7 +30,13 @@ async function extractImagesFromPdfBuffer(buffer: Buffer) {
       if (ops.fnArray[i] === OPS.paintImageXObject || ops.fnArray[i] === OPS.paintInlineImageXObject) {
         const name = ops.argsArray[i][0]
         const common = await page.commonObjs.has(name)
-        const img = await (common ? page.commonObjs.get(name) : page.objs.get(name))
+        const img = await new Promise<any>((resolve) => {
+          if (common) {
+            page.commonObjs.get(name, resolve)
+          } else {
+            page.objs.get(name, resolve)
+          }
+        })
         
         const { width, height } = img
         const bytes = img.data.length

@@ -26,7 +26,7 @@ export async function GET() {
     })
 
     return Response.json({
-      users: users.map((user) => ({
+      users: users.map((user: { id: string; name: string | null; email: string; role: string; plan: string; suspended: boolean; createdAt: Date; emailVerified: Date | null; image: string | null }) => ({
         ...user,
         emailVerified: Boolean(user.emailVerified),
       })),

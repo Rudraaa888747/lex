@@ -199,7 +199,7 @@ export default async function DashboardPage() {
             <EmptyState />
           ) : (
             <ul className="space-y-3">
-              {documents.slice(0, 5).map((doc, i) => (
+              {documents.slice(0, 5).map((doc: { id: string; title: string; type: string; fileType: string | null; fileSize: number | null; status: string; language: string | null; createdAt: Date; updatedAt: Date; }, i: number) => (
                 <li key={doc.id} style={{ animationDelay: `${i * 60}ms` }}>
                   <Link
                     href={`/dashboard/documents/${doc.id}`}

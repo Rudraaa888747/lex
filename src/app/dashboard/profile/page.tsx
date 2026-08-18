@@ -22,7 +22,7 @@ export default async function ProfilePage() {
 
   const currentToken = session.sessionToken
 
-  const initialSessions = dbSessions.map((s) => ({
+  const initialSessions = dbSessions.map((s: { id: string; userAgent: string | null; ip: string | null; createdAt: Date; expires: Date; lastActive: Date | null; sessionToken: string; }) => ({
     id: s.id,
     device: parseDevice(s.userAgent),
     userAgent: s.userAgent,

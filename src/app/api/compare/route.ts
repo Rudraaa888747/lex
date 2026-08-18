@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
       return Response.json({ error: "Documents not found" }, { status: 404 })
     }
 
-    const docs = documents.map((d) => ({ title: d.title, content: d.content || "" }))
+    const docs = documents.map((d: { title: string; content: string | null }) => ({ title: d.title, content: d.content || "" }))
     const result = await compareDocuments(docs)
 
     await prisma.comparison.create({

@@ -2,8 +2,12 @@ import OpenAI from "openai"
 import { type AdvancedAnalysisResult, type ContractScoreBreakdown } from "@/types/analysis"
 import { normalizeAnalysisResult } from "@/lib/analysis-contract"
 
+if (!process.env.OPENAI_API_KEY) {
+  throw new Error("OPENAI_API_KEY environment variable is missing")
+}
+
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || "dummy_key",
+  apiKey: process.env.OPENAI_API_KEY,
   baseURL: "https://openrouter.ai/api/v1",
 })
 

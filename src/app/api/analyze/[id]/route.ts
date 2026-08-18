@@ -84,7 +84,7 @@ export async function POST(
         const analysisData = await analyzeDocument(content, document.title, document.language)
 
         await prisma.$transaction(
-          async (tx) => {
+          async (tx: import("@/generated/prisma/client").Prisma.TransactionClient) => {
             const existing = await tx.analysis.findUnique({
               where: { documentId: id },
             })

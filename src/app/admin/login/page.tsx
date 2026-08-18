@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { signIn } from "next-auth/react"
+import { signIn, getSession, signOut } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -28,6 +28,13 @@ export default function AdminLoginPage() {
 
       if (result?.error) {
         showToast("Invalid credentials", "error")
+        return
+      }
+
+      const session = await getSession()
+      if (session?.user?.role !== "ADMIN") {
+        await signOut({ redirect: false })
+        showToast("This account does not have admin access.", "error")
         return
       }
 

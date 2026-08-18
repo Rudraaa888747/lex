@@ -20,7 +20,7 @@ export default async function HistoryPage() {
     },
   })
 
-  const activities = documents.map(doc => ({
+  const activities = documents.map((doc: { id: string; title: string; type: string; status: string; createdAt: Date; }) => ({
     id: doc.id,
     title: doc.title,
     action: "Document uploaded",

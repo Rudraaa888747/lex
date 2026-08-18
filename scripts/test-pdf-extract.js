@@ -18,7 +18,9 @@ async function extractImagesFromPdf(pdfBuffer) {
         const objId = ops.argsArray[i][0];
         console.log(`Found image object: ${objId}`);
         try {
-          const img = await page.objs.get(objId);
+          const img = await new Promise((resolve) => {
+            page.objs.get(objId, resolve);
+          });
           console.log(`Image data length: ${img.data ? img.data.length : 'undefined'}, width: ${img.width}, height: ${img.height}`);
         } catch (e) {
           console.error(`Error getting image object ${objId}:`, e.message);

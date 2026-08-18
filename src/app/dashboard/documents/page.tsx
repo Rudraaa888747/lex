@@ -21,8 +21,9 @@ export default async function DocumentsListPage() {
   })
 
   // Format the document data for the client component
-  const formattedDocuments = documents.map(doc => ({
+  const formattedDocuments = documents.map((doc: { id: string; title: string; type: string; fileSize: number | null; status: string; createdAt: Date; }) => ({
     ...doc,
+    fileSize: doc.fileSize || 0,
     createdAt: doc.createdAt.toISOString(),
   }))
 

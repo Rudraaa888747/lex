@@ -17,7 +17,7 @@ export async function DELETE() {
     })
 
     const storedPaths = documents
-      .map((document) => document.filePath)
+      .map((document: { filePath: string | null }) => document.filePath)
       .filter((value): value is string => Boolean(value))
 
     if (storedPaths.length > 0) {
