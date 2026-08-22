@@ -50,7 +50,10 @@ export default function AdminUsersPage() {
   }, [])
 
   useEffect(() => {
-    loadUsers()
+    const timeoutId = setTimeout(() => {
+      loadUsers()
+    }, 0)
+    return () => clearTimeout(timeoutId)
   }, [loadUsers])
 
   const filtered = users.filter((u) =>

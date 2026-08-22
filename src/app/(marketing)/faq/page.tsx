@@ -8,7 +8,6 @@ export const metadata: Metadata = {
   openGraph: { title: "Lex AI — Frequently Asked Questions", description: "Answers about Lex AI — supported file types, security, plans, billing, and how our AI legal analysis works." },
   twitter: { title: "Lex AI — Frequently Asked Questions", description: "Answers about Lex AI — supported file types, security, plans, billing, and how our AI legal analysis works." },
 }
-import Link from "next/link"
 import { BackToWebsite } from "@/components/ui/back-to-website"
 import { FaqList } from "@/components/marketing/faq-list"
 

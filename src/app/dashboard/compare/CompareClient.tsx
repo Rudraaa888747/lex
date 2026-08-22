@@ -208,12 +208,10 @@ function SkeletonBlock({ lines = 3 }: { lines?: number }) {
 function ResultSection({
   icon: Icon,
   title,
-  accent = "#0F0E0D",
   children,
 }: {
   icon: React.ElementType
   title: string
-  accent?: string
   children: React.ReactNode
 }) {
   return (
@@ -461,7 +459,7 @@ export function CompareClient({ initialDocuments }: { initialDocuments: Document
 
           {/* Risks */}
           {result.risks && result.risks.length > 0 && (
-            <ResultSection icon={ShieldAlert} title="Risk Comparison" accent="#dc2626">
+            <ResultSection icon={ShieldAlert} title="Risk Comparison">
               <div className="space-y-2">
                 {result.risks.map((risk, i) => {
                   const lvl = riskLevel(risk)

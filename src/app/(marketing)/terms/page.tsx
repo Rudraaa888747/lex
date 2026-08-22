@@ -8,7 +8,6 @@ export const metadata: Metadata = {
   openGraph: { title: "Lex AI — Terms of Service", description: "The terms governing your use of Lex AI's legal document analysis platform and services." },
   twitter: { title: "Lex AI — Terms of Service", description: "The terms governing your use of Lex AI's legal document analysis platform and services." },
 }
-import Link from "next/link"
 import { BackToWebsite } from "@/components/ui/back-to-website"
 
 export default function TermsPage() {

@@ -8,7 +8,6 @@ export const metadata: Metadata = {
   openGraph: { title: "Lex AI — Support", description: "Get help with Lex AI — troubleshooting, account questions, and answers to common issues with document analysis." },
   twitter: { title: "Lex AI — Support", description: "Get help with Lex AI — troubleshooting, account questions, and answers to common issues with document analysis." },
 }
-import Link from "next/link"
 import { BackToWebsite } from "@/components/ui/back-to-website"
 
 export default function SupportPage() {

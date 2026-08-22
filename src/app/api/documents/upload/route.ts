@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
       return Response.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { success, limit: rateLimit, remaining, reset } = await documentUploadLimiter.limit(session.user.id)
+    const { success, reset } = await documentUploadLimiter.limit(session.user.id)
     if (!success) {
       return Response.json(
         { error: "Too many requests, please try again later." },
@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
     // FIRE AND FORGET THE EXTRACTION
     const processUpload = async () => {
       try {
-        const { text: extractedText, isOcrFallback } = await extractDocumentTextFromBuffer({
+        const { text: extractedText } = await extractDocumentTextFromBuffer({
           buffer: fileBuffer,
           fileExtension: ext,
           language,

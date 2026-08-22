@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { CreditCard, Users, CheckCircle, XCircle, Edit3 } from "lucide-react"
+import { Edit3 } from "lucide-react"
 import { showToast } from "@/components/premium-toast"
 
 interface Subscription {

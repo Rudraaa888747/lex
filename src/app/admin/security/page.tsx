@@ -1,7 +1,7 @@
 "use client"
 
 import { Badge } from "@/components/ui/badge"
-import { Shield, AlertTriangle, Lock, Key, Eye, Server, CheckCircle } from "lucide-react"
+import { Shield, AlertTriangle, Lock, Key, Eye, Server } from "lucide-react"
 
 export default function AdminSecurityPage() {
   const securityItems = [

@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
 
     const { documentIds } = await request.json()
 
-    const { success, limit, remaining, reset } = await compareLimiter.limit(session.user.id)
+    const { success, reset } = await compareLimiter.limit(session.user.id)
     if (!success) {
       return Response.json(
         { error: "Too many requests, please try again later." },

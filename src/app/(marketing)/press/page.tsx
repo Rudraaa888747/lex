@@ -8,7 +8,6 @@ export const metadata: Metadata = {
   openGraph: { title: "Lex AI — Press & Media", description: "Latest news, coverage, and media resources about Lex AI and the future of accessible legal technology." },
   twitter: { title: "Lex AI — Press & Media", description: "Latest news, coverage, and media resources about Lex AI and the future of accessible legal technology." },
 }
-import Link from "next/link"
 import { BackToWebsite } from "@/components/ui/back-to-website"
 
 export default function PressPage() {

@@ -1,5 +1,4 @@
 import type { Metadata } from "next"
-import Link from "next/link"
 
 export const metadata: Metadata = {
   title: "Pricing",
@@ -8,9 +7,7 @@ export const metadata: Metadata = {
   openGraph: { title: "Lex AI — Pricing", description: "Simple, transparent pricing for Lex AI. Start free, upgrade for advanced analysis, unlimited chat, comparison, and multi-language support." },
   twitter: { title: "Lex AI — Pricing", description: "Simple, transparent pricing for Lex AI. Start free, upgrade for advanced analysis, unlimited chat, comparison, and multi-language support." },
 }
-import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { CheckCircle, ArrowRight } from "lucide-react"
 import { PricingPlans } from "@/components/marketing/pricing-plans"
 import { PricingFaq } from "@/components/marketing/pricing-faq"
 

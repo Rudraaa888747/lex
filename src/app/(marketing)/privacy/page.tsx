@@ -8,7 +8,6 @@ export const metadata: Metadata = {
   openGraph: { title: "Lex AI — Privacy Policy", description: "How Lex AI protects your data: encryption, zero-retention of analysis inputs, and your rights over your personal information." },
   twitter: { title: "Lex AI — Privacy Policy", description: "How Lex AI protects your data: encryption, zero-retention of analysis inputs, and your rights over your personal information." },
 }
-import Link from "next/link"
 import { BackToWebsite } from "@/components/ui/back-to-website"
 
 export default function PrivacyPage() {

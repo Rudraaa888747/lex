@@ -2,11 +2,10 @@
 
 import { useSession } from "next-auth/react"
 import { redirect } from "next/navigation"
-import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/helpers"
-import { LayoutDashboard, Users, BarChart3, Activity, CreditCard, Settings, Scale, ChevronRight, Shield, AlertTriangle } from "lucide-react"
+import { LayoutDashboard, Users, BarChart3, Activity, CreditCard, ChevronRight, Shield } from "lucide-react"
 
 const adminSidebar = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/admin" },

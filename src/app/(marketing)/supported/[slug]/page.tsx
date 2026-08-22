@@ -3,7 +3,7 @@
 import { useParams } from "next/navigation"
 import Link from "next/link"
 import { FileText, FileSearch, Shield, AlertTriangle, CheckCircle, ArrowLeft, ArrowRight } from "lucide-react"
-import { documentTypes, type DocumentTypeInfo } from "@/data/document-types"
+import { documentTypes } from "@/data/document-types"
 import { BackToWebsite } from "@/components/ui/back-to-website"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"

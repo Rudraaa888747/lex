@@ -1,5 +1,4 @@
 import { apiError } from "@/lib/api-error"
-import { NextRequest } from "next/server"
 import { auth } from "@/lib/auth-config"
 import { prisma } from "@/lib/database"
 

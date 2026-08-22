@@ -8,7 +8,6 @@ export const metadata: Metadata = {
   openGraph: { title: "Lex AI — Careers", description: "Join the team building AI that makes legal documents understandable for everyone. Explore open roles at Lex AI." },
   twitter: { title: "Lex AI — Careers", description: "Join the team building AI that makes legal documents understandable for everyone. Explore open roles at Lex AI." },
 }
-import Link from "next/link"
 import { BackToWebsite } from "@/components/ui/back-to-website"
 
 export default function CareersPage() {

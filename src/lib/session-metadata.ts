@@ -1,12 +1,5 @@
-import { cookies, headers } from "next/headers"
+import { headers } from "next/headers"
 import { prisma } from "@/lib/database"
-
-const SESSION_COOKIE_NAMES = [
-  "__Secure-authjs.session-token",
-  "authjs.session-token",
-  "__Secure-next-auth.session-token",
-  "next-auth.session-token",
-] as const
 
 const SESSION_TOUCH_INTERVAL_MS = 5 * 60 * 1000
 

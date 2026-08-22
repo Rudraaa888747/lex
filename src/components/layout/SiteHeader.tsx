@@ -5,16 +5,15 @@ import Image from "next/image"
 import Link from "next/link"
 import { useSession, signOut } from "next-auth/react"
 import { useState, useCallback, useRef, useEffect } from "react"
-import { usePathname, useRouter } from "next/navigation"
+import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { BottomNav } from "@/components/bottom-nav"
 
-import { Scale, Menu, X, ChevronDown, LogOut, User, LayoutDashboard, Plus, ShieldCheck } from "lucide-react"
+import { Menu, X, ChevronDown, LogOut, User, LayoutDashboard, Plus } from "lucide-react"
 
 export function SiteHeader() {
   const { data: session } = useSession()
   const pathname = usePathname()
-  const router = useRouter()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
 

@@ -118,6 +118,7 @@ export default function DocumentDetailsPage() {
       } catch { /* silent */ }
     }, 3000)
     return () => clearInterval(interval)
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- depend on doc.status only, not the whole doc (it updates every poll tick)
   }, [params.id, doc?.status])
 
   useEffect(() => {

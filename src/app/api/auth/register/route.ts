@@ -8,7 +8,7 @@ import { getRequestMetadata } from "@/lib/request-metadata"
 export async function POST(request: NextRequest) {
   try {
     const { ip } = await getRequestMetadata()
-    const { success, limit, remaining, reset } = await registerLimiter.limit(ip)
+    const { success, reset } = await registerLimiter.limit(ip)
 
     if (!success) {
       return Response.json(
