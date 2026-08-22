@@ -56,3 +56,23 @@ export const supabaseAdmin = {
     },
   },
 }
+
+export const SUPABASE_AVATAR_BUCKET = process.env.SUPABASE_AVATAR_BUCKET || "avatars"
+
+export async function uploadAvatar(buffer: Buffer, path: string, contentType: string): Promise<string> {
+  const { error } = await getSupabaseAdmin()
+    .storage
+    .from(SUPABASE_AVATAR_BUCKET)
+    .upload(path, buffer, { contentType, upsert: true })
+
+  if (error) {
+    throw error
+  }
+
+  const { data } = getSupabaseAdmin()
+    .storage
+    .from(SUPABASE_AVATAR_BUCKET)
+    .getPublicUrl(path)
+
+  return data.publicUrl
+}

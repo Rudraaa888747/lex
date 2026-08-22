@@ -25,6 +25,7 @@ export function PaymentModal({ isOpen, onClose, planName, amount }: PaymentModal
       <div className="relative w-full max-w-md bg-card rounded-3xl shadow-2xl overflow-hidden border border-border animate-in zoom-in-95 duration-200">
         <button 
           onClick={onClose}
+          aria-label="Close"
           className="absolute top-4 right-4 p-2 rounded-full hover:bg-[rgba(0,0,0,0.05)] transition-colors z-10"
         >
           <X className="w-5 h-5 text-muted-foreground" />

@@ -1,25 +1,25 @@
 import { auth } from "@/lib/auth-config"
 import { prisma } from "@/lib/database"
+import { uploadAvatar } from "@/lib/supabase-admin"
+import { avatarUploadLimiter } from "@/lib/rate-limit"
 import { NextResponse } from "next/server"
-import path from "path"
-import fs from "fs/promises"
 
 const MAX_SIZE = 5 * 1024 * 1024
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"]
-
-async function saveLocally(buffer: Buffer, userId: string, ext: string) {
-  const uploadsDir = path.join(process.cwd(), "public", "avatars")
-  await fs.mkdir(uploadsDir, { recursive: true })
-  const filename = `${userId}-${Date.now()}${ext}`
-  await fs.writeFile(path.join(uploadsDir, filename), buffer)
-  return `/avatars/${filename}`
-}
 
 export async function POST(req: Request) {
   try {
     const session = await auth()
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const { success, reset } = await avatarUploadLimiter.limit(session.user.id)
+    if (!success) {
+      return NextResponse.json(
+        { error: "Too many requests, please try again later." },
+        { status: 429, headers: { "Retry-After": Math.ceil((reset - Date.now()) / 1000).toString() } }
+      )
     }
 
     const formData = await req.formData()
@@ -51,7 +51,8 @@ export async function POST(req: Request) {
       avatarUrl = result.secure_url
     } else {
       const ext = file.type.split("/")[1].replace("jpeg", "jpg")
-      avatarUrl = await saveLocally(buffer, session.user.id, `.${ext}`)
+      const avatarPath = `${session.user.id}-${Date.now()}.${ext}`
+      avatarUrl = await uploadAvatar(buffer, avatarPath, file.type)
     }
 
     await prisma.user.update({

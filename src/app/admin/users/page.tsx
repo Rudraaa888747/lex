@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Search, UserX, UserCheck, Loader2 } from "lucide-react"
@@ -22,16 +22,36 @@ interface AdminUser {
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<AdminUser[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [cursor, setCursor] = useState<string | null>(null)
+  const [hasMore, setHasMore] = useState(false)
   const [search, setSearch] = useState("")
   const [updating, setUpdating] = useState<string | null>(null)
 
-  useEffect(() => {
-    fetch("/api/admin/users")
-      .then((r) => r.json())
-      .then((data) => setUsers(data.users || []))
-      .catch(() => showToast("Failed to load users", "error"))
-      .finally(() => setLoading(false))
+  const loadUsers = useCallback(async (loadCursor?: string | null) => {
+    if (loadCursor) setLoadingMore(true)
+    else setLoading(true)
+    try {
+      const res = await fetch(loadCursor ? `/api/admin/users?cursor=${loadCursor}` : "/api/admin/users")
+      const data = await res.json()
+      const fetched: AdminUser[] = (data.users || []).map((u: { id: string; name: string | null; email: string; role: string; plan: string; createdAt: string | Date; emailVerified: boolean; image: string | null; suspended?: boolean }) => ({
+        ...u,
+        createdAt: typeof u.createdAt === "string" ? u.createdAt : new Date(u.createdAt).toISOString(),
+      }))
+      setUsers((prev) => (loadCursor ? [...prev, ...fetched] : fetched))
+      setCursor(data.nextCursor ?? null)
+      setHasMore(Boolean(data.hasMore))
+    } catch {
+      showToast("Failed to load users", "error")
+    } finally {
+      setLoading(false)
+      setLoadingMore(false)
+    }
   }, [])
+
+  useEffect(() => {
+    loadUsers()
+  }, [loadUsers])
 
   const filtered = users.filter((u) =>
     u.name?.toLowerCase().includes(search.toLowerCase()) ||
@@ -85,7 +105,7 @@ export default function AdminUsersPage() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground" style={{ fontFamily: "var(--font-display)" }}>User Management</h1>
-          <p className="text-muted-foreground mt-1 font-medium">{users.length} total users</p>
+          <p className="text-muted-foreground mt-1 font-medium">{users.length} {users.length === 1 ? "user" : "users"}{hasMore ? " loaded" : ""}</p>
         </div>
       </div>
 
@@ -163,6 +183,7 @@ export default function AdminUsersPage() {
                             onClick={() => toggleUserStatus(user.id, !user.suspended)}
                             disabled={updating === user.id}
                             loading={updating === user.id}
+                            aria-label={user.suspended ? "Activate user" : "Suspend user"}
                             className={user.suspended ? "text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50" : "text-red-600 hover:text-red-700 hover:bg-red-50"}
                           >
                             {user.suspended ? <UserCheck className="w-4 h-4" /> : <UserX className="w-4 h-4" />}
@@ -177,6 +198,15 @@ export default function AdminUsersPage() {
           </table>
         </div>
       </div>
+
+      {hasMore && (
+        <div className="flex justify-center pt-2">
+          <Button variant="outline" onClick={() => loadUsers(cursor)} disabled={loadingMore || !cursor}>
+            {loadingMore ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+            Load more
+          </Button>
+        </div>
+      )}
     </div>
   )
 }

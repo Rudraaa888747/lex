@@ -1,4 +1,13 @@
+import type { Metadata } from "next"
 import { Scale } from "lucide-react"
+
+export const metadata: Metadata = {
+  title: "Terms of Service",
+  description: "The terms governing your use of Lex AI's legal document analysis platform and services.",
+  alternates: { canonical: "/terms" },
+  openGraph: { title: "Lex AI — Terms of Service", description: "The terms governing your use of Lex AI's legal document analysis platform and services." },
+  twitter: { title: "Lex AI — Terms of Service", description: "The terms governing your use of Lex AI's legal document analysis platform and services." },
+}
 import Link from "next/link"
 import { BackToWebsite } from "@/components/ui/back-to-website"
 

@@ -1,4 +1,13 @@
+import type { Metadata } from "next"
 import { Briefcase } from "lucide-react"
+
+export const metadata: Metadata = {
+  title: "Careers at Lex",
+  description: "Join the team building AI that makes legal documents understandable for everyone. Explore open roles at Lex AI.",
+  alternates: { canonical: "/careers" },
+  openGraph: { title: "Lex AI — Careers", description: "Join the team building AI that makes legal documents understandable for everyone. Explore open roles at Lex AI." },
+  twitter: { title: "Lex AI — Careers", description: "Join the team building AI that makes legal documents understandable for everyone. Explore open roles at Lex AI." },
+}
 import Link from "next/link"
 import { BackToWebsite } from "@/components/ui/back-to-website"
 

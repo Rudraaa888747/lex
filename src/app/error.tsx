@@ -11,6 +11,7 @@ export default function ErrorPage({
   error: Error & { digest?: string }
   reset: () => void
 }) {
+  console.error("[App Error]", error)
   return (
     <div className="min-h-[70vh] flex items-center justify-center p-4">
       <div className="max-w-md w-full glass-default rounded-3xl p-8 text-center border border-border shadow-[var(--shadow-md)]">
@@ -19,7 +20,7 @@ export default function ErrorPage({
         </div>
         <h1 className="text-2xl font-bold mb-3" style={{ fontFamily: "var(--font-display)" }}>Something went wrong</h1>
         <p className="text-muted-foreground mb-8 text-sm">
-          {error.message || "An unexpected error occurred. Please try again."}
+          An unexpected error occurred. Please try again or contact support.
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Button variant="gradient" onClick={() => reset()} className="px-6">

@@ -6,7 +6,7 @@ const OCR_LANGUAGE_MAP: Record<string, string> = {
   GU: "guj",
 }
 
-function normalizeExtractedText(value: string) {
+export function normalizeExtractedText(value: string) {
   return value
     .replace(/\u0000/g, "")
     .replace(/\r\n/g, "\n")

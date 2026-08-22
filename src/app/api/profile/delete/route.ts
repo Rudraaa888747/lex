@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth-config"
 import { prisma } from "@/lib/database"
+import { profileMutationLimiter } from "@/lib/rate-limit"
 import { NextResponse } from "next/server"
 import { removeStoredDocuments } from "@/lib/supabase-admin"
 
@@ -8,6 +9,14 @@ export async function DELETE() {
     const session = await auth()
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const { success, reset } = await profileMutationLimiter.limit(session.user.id)
+    if (!success) {
+      return NextResponse.json(
+        { error: "Too many requests, please try again later." },
+        { status: 429, headers: { "Retry-After": Math.ceil((reset - Date.now()) / 1000).toString() } }
+      )
     }
 
     const userId = session.user.id

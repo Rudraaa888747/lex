@@ -1,4 +1,13 @@
+import type { Metadata } from "next"
 import { Shield, Lock, Server, FileCheck, Eye, KeyRound, Trash2 } from "lucide-react"
+
+export const metadata: Metadata = {
+  title: "Security",
+  description: "Bank-grade security at Lex AI: AES-256 encryption, isolated processing, GDPR compliance, and strict access controls.",
+  alternates: { canonical: "/security" },
+  openGraph: { title: "Lex AI — Security", description: "Bank-grade security at Lex AI: AES-256 encryption, isolated processing, GDPR compliance, and strict access controls." },
+  twitter: { title: "Lex AI — Security", description: "Bank-grade security at Lex AI: AES-256 encryption, isolated processing, GDPR compliance, and strict access controls." },
+}
 import Link from "next/link"
 import { BackToWebsite } from "@/components/ui/back-to-website"
 

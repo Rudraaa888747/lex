@@ -16,6 +16,7 @@ import {
   Loader2,
 } from "lucide-react"
 import { showToast } from "@/components/premium-toast"
+import { getUserFriendlyErrorMessage } from "@/lib/api-error"
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface Settings {
@@ -197,7 +198,7 @@ export function SettingsClient({ initialSettings }: { initialSettings: Settings 
       showToast("Settings saved successfully", "success")
       router.refresh()
     } catch (err) {
-      showToast(err instanceof Error ? err.message : "Failed to save settings", "error")
+      showToast(getUserFriendlyErrorMessage(err instanceof Error ? err.message : null), "error")
     } finally {
       setSaving(false)
     }

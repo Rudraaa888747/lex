@@ -1,8 +1,10 @@
 import { NextRequest, after } from "next/server"
 import { auth } from "@/lib/auth-config"
-import { prisma } from "@/lib/database"
+import { prisma, prismaDirect } from "@/lib/database"
 import { analyzeDocument, validateContent } from "@/services/ai.service"
 import { buildContractScoreCard } from "@/lib/analysis-contract"
+import { analyzeLimiter } from "@/lib/rate-limit"
+import { apiError } from "@/lib/api-error"
 
 export const maxDuration = 60
 
@@ -19,6 +21,14 @@ export async function POST(
     }
 
     sessionUserId = session.user.id
+
+    const { success, reset } = await analyzeLimiter.limit(session.user.id)
+    if (!success) {
+      return Response.json(
+        { error: "Too many requests, please try again later." },
+        { status: 429, headers: { "Retry-After": Math.ceil((reset - Date.now()) / 1000).toString() } }
+      )
+    }
 
     const { id } = await params
 
@@ -83,7 +93,7 @@ export async function POST(
       try {
         const analysisData = await analyzeDocument(content, document.title, document.language)
 
-        await prisma.$transaction(
+        await prismaDirect.$transaction(
           async (tx: import("@/generated/prisma/client").Prisma.TransactionClient) => {
             const existing = await tx.analysis.findUnique({
               where: { documentId: id },
@@ -163,6 +173,6 @@ export async function POST(
     }).catch(() => {})
 
     console.error("Analysis error:", message)
-    return Response.json({ error: message }, { status: 500 })
+    return apiError(error, "Analysis failed. Please try again.", 500)
   }
 }

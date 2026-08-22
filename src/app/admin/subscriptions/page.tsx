@@ -15,6 +15,18 @@ interface Subscription {
   billingCycle: string
 }
 
+interface AdminUser {
+  id: string
+  name: string | null
+  email: string
+  role: string
+  plan: string
+  suspended: boolean
+  createdAt: string
+  emailVerified: boolean
+  image: string | null
+}
+
 export default function AdminSubscriptionsPage() {
   const [loading, setLoading] = useState(true)
   const [subs, setSubs] = useState<Subscription[]>([])
@@ -25,7 +37,7 @@ export default function AdminSubscriptionsPage() {
         const res = await fetch("/api/admin/users")
         if (res.ok) {
           const data = await res.json()
-          setSubs(data.users?.map((u: any) => ({
+          setSubs(data.users?.map((u: AdminUser) => ({
             id: u.id,
             name: u.name || "Unknown",
             email: u.email,
@@ -87,7 +99,7 @@ export default function AdminSubscriptionsPage() {
               ) : subs.length === 0 ? (
                 <tr><td colSpan={5} className="p-8 text-center text-muted-foreground font-medium">No subscriptions found</td></tr>
               ) : (
-                subs.slice(0, 10).map((sub: any) => (
+                subs.slice(0, 10).map((sub: Subscription) => (
                   <tr key={sub.id} className="border-b border-border hover:bg-[rgba(0,0,0,0.02)] transition-colors">
                     <td className="p-4">
                       <p className="text-sm font-bold text-foreground">{sub.name}</p>

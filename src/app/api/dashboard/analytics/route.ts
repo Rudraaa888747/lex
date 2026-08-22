@@ -1,5 +1,6 @@
 import { apiError } from "@/lib/api-error"
 import { auth } from "@/lib/auth-config"
+import { analyticsReadLimiter } from "@/lib/rate-limit"
 import { prisma } from "@/lib/database"
 
 function monthKey(date: Date) {
@@ -20,6 +21,14 @@ export async function GET() {
     const session = await auth()
     if (!session?.user?.id) {
       return Response.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const { success, reset } = await analyticsReadLimiter.limit(session.user.id)
+    if (!success) {
+      return Response.json(
+        { error: "Too many requests, please try again later." },
+        { status: 429, headers: { "Retry-After": Math.ceil((reset - Date.now()) / 1000).toString() } }
+      )
     }
 
     const userId = session.user.id;

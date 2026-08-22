@@ -18,6 +18,7 @@ import {
   Plus,
 } from "lucide-react"
 import { showToast } from "@/components/premium-toast"
+import { getUserFriendlyErrorMessage } from "@/lib/api-error"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface DocumentItem {
@@ -259,7 +260,7 @@ export function CompareClient({ initialDocuments }: { initialDocuments: Document
       else if (!doc2) setDoc2(data.document.id)
       showToast("Document uploaded", "success")
     } catch (err) {
-      showToast(err instanceof Error ? err.message : "Upload failed", "error")
+      showToast(getUserFriendlyErrorMessage(err instanceof Error ? err.message : null), "error")
     } finally {
       setUploading(false)
       if (fileRef.current) fileRef.current.value = ""

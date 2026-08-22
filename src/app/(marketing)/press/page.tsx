@@ -1,4 +1,13 @@
+import type { Metadata } from "next"
 import { Newspaper } from "lucide-react"
+
+export const metadata: Metadata = {
+  title: "Press & Media",
+  description: "Latest news, coverage, and media resources about Lex AI and the future of accessible legal technology.",
+  alternates: { canonical: "/press" },
+  openGraph: { title: "Lex AI — Press & Media", description: "Latest news, coverage, and media resources about Lex AI and the future of accessible legal technology." },
+  twitter: { title: "Lex AI — Press & Media", description: "Latest news, coverage, and media resources about Lex AI and the future of accessible legal technology." },
+}
 import Link from "next/link"
 import { BackToWebsite } from "@/components/ui/back-to-website"
 

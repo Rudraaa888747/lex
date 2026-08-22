@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth-config"
 import { prisma } from "@/lib/database"
 import bcrypt from "bcryptjs"
+import { passwordChangeLimiter } from "@/lib/rate-limit"
 import { NextResponse } from "next/server"
 
 export async function PATCH(req: Request) {
@@ -8,6 +9,14 @@ export async function PATCH(req: Request) {
     const session = await auth()
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const { success, reset } = await passwordChangeLimiter.limit(session.user.id)
+    if (!success) {
+      return NextResponse.json(
+        { error: "Too many requests, please try again later." },
+        { status: 429, headers: { "Retry-After": Math.ceil((reset - Date.now()) / 1000).toString() } }
+      )
     }
 
     const { currentPassword, newPassword } = await req.json()

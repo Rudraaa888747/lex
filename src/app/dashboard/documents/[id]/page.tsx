@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { FileText, ArrowLeft, MessageSquare, Download, AlertTriangle, Calendar, DollarSign, Shield, User, BookOpen, CheckCircle, XCircle, Brain, Loader2, Info } from "lucide-react"
 import { formatDate } from "@/lib/helpers"
 import { showToast } from "@/components/premium-toast"
+import { getUserFriendlyErrorMessage } from "@/lib/api-error"
 import type { ContractScoreCard } from "@/types/analysis"
 import { isPremiumPlan } from "@/lib/subscription"
 
@@ -89,7 +90,7 @@ export default function DocumentDetailsPage() {
       // If background task started, do NOT setAnalyzing(false). Let the polling handle it.
       
     } catch (err) {
-      showToast(err instanceof Error ? err.message : "Analysis failed", "error")
+      showToast(getUserFriendlyErrorMessage(err instanceof Error ? err.message : null), "error")
       setAnalyzing(false)
     }
   }, [params.id])
@@ -107,7 +108,7 @@ export default function DocumentDetailsPage() {
             if (data.document.status !== "PROCESSING" && data.document.status !== "OCR_PROCESSING") {
               clearInterval(interval)
               if (data.document.status === "FAILED") {
-                showToast("Document processing failed: " + (data.document.errorMessage || "Unknown error"), "error")
+                showToast(getUserFriendlyErrorMessage(data.document.errorMessage), "error")
               } else if (data.document.status === "READY_FOR_ANALYSIS") {
                 showToast("Document ready for analysis", "success")
               }
@@ -137,7 +138,7 @@ export default function DocumentDetailsPage() {
             setDoc(data.document)
             setAnalyzing(false)
             clearInterval(interval)
-            showToast("Analysis failed: " + (data.document?.errorMessage || "Unknown error"), "error")
+            showToast(getUserFriendlyErrorMessage(data.document?.errorMessage), "error")
           }
         }
       } catch { /* silent */ }
@@ -168,7 +169,7 @@ export default function DocumentDetailsPage() {
       anchor.click()
       URL.revokeObjectURL(url)
     } catch (error) {
-      showToast(error instanceof Error ? error.message : "Report download failed", "error")
+      showToast(getUserFriendlyErrorMessage(error instanceof Error ? error.message : null), "error")
     } finally {
       setDownloadingReport(false)
     }
@@ -625,7 +626,7 @@ export default function DocumentDetailsPage() {
             <XCircle className="w-10 h-10 text-red-600" />
           </div>
           <h2 className="text-heading text-xl mb-3 text-[#7f1d1d]" style={{ fontFamily: "var(--font-display)" }}>Analysis Failed</h2>
-          <p className="text-[0.95rem] text-[#991b1b]/80 max-w-sm mx-auto mb-8">{(doc as any).errorMessage || "We couldn't extract readable text or analyze this document. Please try again."}</p>
+          <p className="text-[0.95rem] text-[#991b1b]/80 max-w-sm mx-auto mb-8">{getUserFriendlyErrorMessage((doc as any).errorMessage)}</p>
           <Button variant="gradient" size="lg" onClick={handleStartAnalysis} loading={analyzing} className="px-8 bg-red-600 hover:bg-red-700">
             <Brain className="w-4 h-4 mr-2" />
             {analyzing ? "Retrying…" : "Retry Analysis"}

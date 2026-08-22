@@ -1,6 +1,13 @@
-"use client"
-
+import type { Metadata } from "next"
 import Link from "next/link"
+
+export const metadata: Metadata = {
+  title: "How It Works",
+  description: "See how Lex AI turns dense legal contracts into clear insights in five steps: upload, analyze, summarize, compare, and export.",
+  alternates: { canonical: "/how-it-works" },
+  openGraph: { title: "Lex AI — How It Works", description: "See how Lex AI turns dense legal contracts into clear insights in five steps: upload, analyze, summarize, compare, and export." },
+  twitter: { title: "Lex AI — How It Works", description: "See how Lex AI turns dense legal contracts into clear insights in five steps: upload, analyze, summarize, compare, and export." },
+}
 import { Upload, Brain, FileSearch, Download, ArrowRight, ShieldCheck, Zap, Key } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { BackToWebsite } from "@/components/ui/back-to-website"

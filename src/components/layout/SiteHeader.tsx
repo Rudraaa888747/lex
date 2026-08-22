@@ -138,7 +138,7 @@ export function SiteHeader() {
                   </Button>
                 </Link>
                 <Link href="/dashboard/upload" className="sm:hidden">
-                  <Button variant="gradient" size="icon" className="w-9 h-9 rounded-xl">
+                  <Button variant="gradient" size="icon" className="w-9 h-9 rounded-xl" aria-label="New analysis">
                     <Plus className="w-4 h-4" />
                   </Button>
                 </Link>

@@ -1,4 +1,13 @@
+import type { Metadata } from "next"
 import Link from "next/link"
+
+export const metadata: Metadata = {
+  title: "Features",
+  description: "Explore how Lex AI simplifies contracts: AI risk detection, clause mapping, document chat, smart comparison, and multi-language analysis.",
+  alternates: { canonical: "/features" },
+  openGraph: { title: "Lex AI — Features", description: "Explore how Lex AI simplifies contracts: AI risk detection, clause mapping, document chat, smart comparison, and multi-language analysis." },
+  twitter: { title: "Lex AI — Features", description: "Explore how Lex AI simplifies contracts: AI risk detection, clause mapping, document chat, smart comparison, and multi-language analysis." },
+}
 import {
   Brain, AlertTriangle, FileSearch, MessageSquare,
   GitCompare, Download, Globe, BarChart2,

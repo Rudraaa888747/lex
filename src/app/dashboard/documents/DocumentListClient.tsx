@@ -4,7 +4,7 @@ import { useState, useCallback, useMemo } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { FileText, Upload, Search, ArrowRight, Trash2 } from "lucide-react"
+import { FileText, Upload, Search, ArrowRight, Trash2, Loader2 } from "lucide-react"
 import { formatDate, formatFileSize } from "@/lib/helpers"
 import { showToast } from "@/components/premium-toast"
 
@@ -37,11 +37,35 @@ const STATUS_VARIANTS: Record<string, "success" | "warning" | "secondary" | "dan
   PENDING: "secondary",
 }
 
-export function DocumentListClient({ initialDocuments }: { initialDocuments: DocumentItem[] }) {
+export function DocumentListClient({ initialDocuments, initialCursor, hasMoreInitial }: { initialDocuments: DocumentItem[]; initialCursor: string | null; hasMoreInitial: boolean }) {
   const [documents, setDocuments] = useState<DocumentItem[]>(initialDocuments)
+  const [cursor, setCursor] = useState<string | null>(initialCursor)
+  const [hasMore, setHasMore] = useState(hasMoreInitial)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [search, setSearch] = useState("")
   const [filter, setFilter] = useState("ALL")
   const [deleting, setDeleting] = useState<string | null>(null)
+
+  const loadMore = async () => {
+    if (!cursor || loadingMore) return
+    setLoadingMore(true)
+    try {
+      const res = await fetch(`/api/documents?limit=12&cursor=${cursor}`)
+      const data = await res.json()
+      const fetched: DocumentItem[] = (data.documents || []).map((d: { id: string; title: string; type: string; fileSize: number | null; status: string; createdAt: string | Date }) => ({
+        ...d,
+        fileSize: d.fileSize || 0,
+        createdAt: typeof d.createdAt === "string" ? d.createdAt : new Date(d.createdAt).toISOString(),
+      }))
+      setDocuments((prev) => [...prev, ...fetched])
+      setCursor(data.nextCursor ?? null)
+      setHasMore(Boolean(data.hasMore))
+    } catch {
+      showToast("Failed to load more documents", "error")
+    } finally {
+      setLoadingMore(false)
+    }
+  }
 
   const deleteDocument = useCallback(async (id: string) => {
     setDeleting(id)
@@ -108,7 +132,8 @@ export function DocumentListClient({ initialDocuments }: { initialDocuments: Doc
           <p className="text-base text-muted-foreground max-w-sm mx-auto leading-relaxed">Upload your first document or change your search filters.</p>
         </div>
       ) : (
-        <div className="space-y-4 overflow-hidden">
+        <>
+          <div className="space-y-4 overflow-hidden">
           {filtered.map((doc) => (
             <div key={doc.id} className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-5 p-4 sm:p-5 rounded-2xl bg-card border border-border transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)] group relative">
               <div className="flex items-start sm:items-center gap-4 flex-1 min-w-0">
@@ -142,6 +167,16 @@ export function DocumentListClient({ initialDocuments }: { initialDocuments: Doc
             </div>
           ))}
         </div>
+
+        {hasMore && (
+          <div className="flex justify-center pt-2">
+            <Button variant="outline" onClick={loadMore} disabled={loadingMore}>
+              {loadingMore ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+              Load more
+            </Button>
+          </div>
+        )}
+        </>
       )}
     </div>
   )

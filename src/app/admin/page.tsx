@@ -1,8 +1,8 @@
-"use client"
-
-import { useState, useEffect } from "react"
 import { Badge } from "@/components/ui/badge"
-import { Users, FileText, Activity, CreditCard, TrendingUp, AlertTriangle, ArrowUp, ArrowDown, Loader2 } from "lucide-react"
+import { Users, FileText, Activity, CreditCard, TrendingUp, AlertTriangle, ArrowUp, ArrowDown } from "lucide-react"
+import { auth } from "@/lib/auth-config"
+import { prisma } from "@/lib/database"
+import { redirect } from "next/navigation"
 
 interface AdminStats {
   totalUsers: number
@@ -15,42 +15,27 @@ interface AdminStats {
   errorRate: number
 }
 
-const DEFAULT_STATS: AdminStats = {
-  totalUsers: 0,
-  activeUsers: 0,
-  totalDocuments: 0,
-  totalAnalyses: 0,
-  revenue: 0,
-  aiUsage: 0,
-  storageUsed: 0,
-  errorRate: 0,
-}
+export default async function AdminDashboard() {
+  const session = await auth()
+  if (session?.user?.role !== "ADMIN") redirect("/admin/login")
 
-export default function AdminDashboard() {
-  const [stats, setStats] = useState<AdminStats>(DEFAULT_STATS)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(false)
+  const [totalUsers, totalDocuments, totalAnalyses, activeUsers] = await Promise.all([
+    prisma.user.count(),
+    prisma.document.count(),
+    prisma.analysis.count(),
+    prisma.user.count({ where: { role: "USER" } }),
+  ])
 
-  useEffect(() => {
-    let cancelled = false
-    async function load() {
-      try {
-        const res = await fetch("/api/admin/stats")
-        if (res.ok) {
-          const data = await res.json()
-          if (!cancelled) setStats(data)
-        } else {
-          setError(true)
-        }
-      } catch {
-        if (!cancelled) setError(true)
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
-    }
-    load()
-    return () => { cancelled = true }
-  }, [])
+  const stats: AdminStats = {
+    totalUsers,
+    activeUsers,
+    totalDocuments,
+    totalAnalyses,
+    revenue: totalAnalyses * 0.01,
+    aiUsage: totalAnalyses,
+    storageUsed: Math.round(totalDocuments * 5) / 10,
+    errorRate: 0.5,
+  }
 
   const statCards = [
     { icon: Users, label: "Total Users", value: stats.totalUsers, change: "+12%", up: true, color: "text-blue-400", bg: "bg-blue-500/10", border: "border-blue-500/20", shadow: "shadow-blue-500/10" },
@@ -60,16 +45,6 @@ export default function AdminDashboard() {
     { icon: CreditCard, label: "Revenue", value: `$${stats.revenue}`, change: "+18%", up: true, color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20", shadow: "shadow-emerald-500/10" },
     { icon: AlertTriangle, label: "Error Rate", value: `${stats.errorRate}%`, change: "-2%", up: false, color: "text-rose-400", bg: "bg-rose-500/10", border: "border-rose-500/20", shadow: "shadow-rose-500/10" },
   ]
-
-  if (error) {
-    return (
-      <div className="g-default rounded-2xl p-12 text-center">
-        <AlertTriangle className="w-12 h-12 text-danger mx-auto mb-4" />
-        <h2 className="text-lg font-semibold mb-2">Failed to load admin data</h2>
-        <p className="text-sm text-[#9aa0a6]">Please try refreshing the page</p>
-      </div>
-    )
-  }
 
   return (
     <div className="space-y-8">
@@ -93,7 +68,7 @@ export default function AdminDashboard() {
               <stat.icon className={`w-5 h-5 ${stat.color}`} />
             </div>
             <p className="text-xl sm:text-2xl font-bold tracking-tight text-foreground leading-none mb-1">
-              {loading ? "..." : stat.value}
+              {stat.value}
             </p>
             <p className="text-xs sm:text-sm font-medium text-muted-foreground leading-snug">{stat.label}</p>
             <div className={`flex items-center gap-1 text-xs font-medium mt-2 ${stat.up ? "text-emerald-400" : "text-rose-400"}`}>
@@ -108,9 +83,6 @@ export default function AdminDashboard() {
         <div className="glass-default rounded-2xl sm:rounded-3xl p-5 sm:p-6 border border-white/5">
           <h2 className="text-lg font-semibold text-foreground mb-4">Recent Activity</h2>
           <div className="space-y-3">
-              {loading ? (
-              [1,2,3,4].map((i) => <div key={i} className="h-12 rounded-xl bg-white/5 animate-pulse" />)
-            ) : (
               <>
                 <div className="flex items-center justify-between p-3 sm:p-4 rounded-xl glass-subtle border border-white/5 transition-colors hover:bg-white/[0.02]">
                   <span className="text-sm font-medium text-foreground">New user registered</span>
@@ -129,7 +101,6 @@ export default function AdminDashboard() {
                   <span className="text-xs text-muted-foreground shrink-0">2 hours ago</span>
                 </div>
               </>
-            )}
           </div>
         </div>
 

@@ -2,14 +2,15 @@
 
 import { useState, useEffect, useRef } from "react"
 import { useSession, signOut } from "next-auth/react"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
   User, Save, Key, Camera, LogOut,
-  Loader2, X, Monitor, Smartphone, Globe,
-  Clock, Trash2, AlertTriangle, Eye, EyeOff, RefreshCw
+  Loader2, X, Trash2, AlertTriangle, Eye, EyeOff
 } from "lucide-react"
 import { showToast } from "@/components/premium-toast"
+import { getUserFriendlyErrorMessage } from "@/lib/api-error"
 
 type ProfileSession = {
   user?: {
@@ -19,17 +20,6 @@ type ProfileSession = {
     createdAt?: string
   }
 } | null
-
-type ActiveSession = {
-  id: string
-  device: string
-  userAgent?: string | null
-  ip?: string | null
-  createdAt?: string
-  expiresAt?: string
-  lastActive?: string
-  isCurrent: boolean
-}
 
 function PasswordStrength({ password }: { password: string }) {
   if (!password) return null
@@ -112,7 +102,7 @@ function AvatarSection({ session, onAvatarChange }: { session: ProfileSession; o
       onAvatarChange(data.avatarUrl)
       showToast("Profile picture updated", "success")
     } catch (err) {
-      showToast(err instanceof Error ? err.message : "Upload failed", "error")
+      showToast(getUserFriendlyErrorMessage(err instanceof Error ? err.message : null), "error")
       setPreview(session?.user?.image || null)
     } finally {
       setUploading(false)
@@ -127,7 +117,7 @@ function AvatarSection({ session, onAvatarChange }: { session: ProfileSession; o
       <div className="relative flex-shrink-0">
         <div className="w-16 h-16 rounded-2xl overflow-hidden shadow-[var(--shadow-md)] border border-border">
           {preview ? (
-            <img src={preview} alt="Avatar" className="w-full h-full object-cover" />
+            <Image src={preview} alt="Avatar" fill unoptimized sizes="64px" className="w-full h-full object-cover" />
           ) : (
             <div className="w-full h-full bg-primary-btn flex items-center justify-center text-2xl font-bold text-[#FAF8F3]">
               {initials}
@@ -137,6 +127,7 @@ function AvatarSection({ session, onAvatarChange }: { session: ProfileSession; o
         <button
           onClick={() => fileRef.current?.click()}
           disabled={uploading}
+          aria-label="Change profile photo"
           className="absolute -bottom-1.5 -right-1.5 w-7 h-7 rounded-full bg-card border border-border shadow-[var(--shadow-sm)]
             flex items-center justify-center hover:bg-[rgba(0,0,0,0.04)] transition-colors cursor-pointer"
         >
@@ -189,7 +180,7 @@ function PersonalInfoSection({ session }: { session: ProfileSession }) {
       setChanged(false)
       showToast("Profile updated successfully", "success")
     } catch (err) {
-      showToast(err instanceof Error ? err.message : "Update failed", "error")
+      showToast(getUserFriendlyErrorMessage(err instanceof Error ? err.message : null), "error")
     } finally {
       setSaving(false)
     }
@@ -247,7 +238,7 @@ function PasswordSection() {
       setForm({ currentPassword: "", newPassword: "", confirmPassword: "" })
       showToast("Password changed successfully", "success")
     } catch (err) {
-      showToast(err instanceof Error ? err.message : "Password change failed", "error")
+      showToast(getUserFriendlyErrorMessage(err instanceof Error ? err.message : null), "error")
     } finally {
       setSaving(false)
     }
@@ -267,6 +258,7 @@ function PasswordSection() {
           <button
             type="button"
             onClick={() => setShowCurrent((v) => !v)}
+            aria-label={showCurrent ? "Hide current password" : "Show current password"}
             className="absolute right-3 top-[34px] text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
           >
             {showCurrent ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -286,6 +278,7 @@ function PasswordSection() {
               <button
                 type="button"
                 onClick={() => setShowNew((v) => !v)}
+                aria-label={showNew ? "Hide new password" : "Show new password"}
                 className="absolute right-3 top-[34px] text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
               >
                 {showNew ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -312,149 +305,6 @@ function PasswordSection() {
         <Key className="w-4 h-4" />
         Update Password
       </Button>
-    </SectionCard>
-  )
-}
-
-function SessionsSection({ initialSessions }: { initialSessions: ActiveSession[] }) {
-  const [sessions, setSessions] = useState<ActiveSession[]>(initialSessions)
-  const [revoking, setRevoking] = useState<string | null>(null)
-
-  const fetchSessions = async () => {
-    try {
-      const res = await fetch("/api/profile/sessions")
-      const data = await res.json()
-      if (res.ok) setSessions((data.sessions || []) as ActiveSession[])
-    } catch { /* silent */ }
-  }
-
-  const revoke = async (sessionId: string) => {
-    setRevoking(sessionId)
-    try {
-      const res = await fetch(`/api/profile/sessions/${sessionId}`, { method: "DELETE" })
-      if (!res.ok) throw new Error()
-      setSessions((s) => s.filter((x) => x.id !== sessionId))
-      showToast("Session revoked", "success")
-    } catch {
-      showToast("Failed to revoke session", "error")
-    } finally {
-      setRevoking(null)
-    }
-  }
-
-  const revokeAll = async () => {
-    setRevoking("all")
-    try {
-      const res = await fetch("/api/profile/sessions", { method: "DELETE" })
-      if (!res.ok) throw new Error()
-      await fetchSessions()
-      showToast("All other sessions revoked", "success")
-    } catch {
-      showToast("Failed to revoke sessions", "error")
-    } finally {
-      setRevoking(null)
-    }
-  }
-
-  const DeviceIcon = ({ ua }: { ua?: string | null }) => {
-    if (!ua) return <Monitor className="w-4 h-4 text-foreground" />
-    const isMobile = /mobile|android|iphone/i.test(ua)
-    return isMobile ? <Smartphone className="w-4 h-4 text-foreground" /> : <Monitor className="w-4 h-4 text-foreground" />
-  }
-
-  const formatDate = (dateStr?: string) => {
-    if (!dateStr) return "—"
-    const d = new Date(dateStr)
-    const now = new Date()
-    const diff = (now.getTime() - d.getTime()) / 1000
-    if (diff < 60) return "Just now"
-    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`
-    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`
-    return d.toLocaleDateString()
-  }
-
-  return (
-    <SectionCard>
-      <div className="flex items-start justify-between gap-4 pb-4 border-b border-border mb-5">
-        <div className="flex items-start gap-3">
-          <div className="w-8 h-8 rounded-lg bg-[rgba(0,0,0,0.04)] border border-border flex items-center justify-center flex-shrink-0 mt-0.5 shadow-sm">
-            <Globe className="w-4 h-4 text-foreground" />
-          </div>
-          <div>
-            <h3 className="font-semibold text-sm text-foreground" style={{ fontFamily: "var(--font-display)" }}>Active Sessions</h3>
-            <p className="text-xs text-muted-foreground mt-0.5 font-medium">Devices currently signed into your account</p>
-          </div>
-        </div>
-        <div className="flex gap-2 flex-shrink-0">
-          <button onClick={fetchSessions} className="text-muted-foreground hover:text-foreground transition-colors p-1.5 rounded-lg hover:bg-[rgba(0,0,0,0.04)] cursor-pointer">
-            <RefreshCw className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      </div>
-
-      {sessions.length === 0 ? (
-        <p className="text-sm text-muted-foreground text-center py-6 font-medium">No active sessions found</p>
-      ) : (
-        <div className="space-y-2">
-          {sessions.map((s) => (
-            <div
-              key={s.id}
-              className={`flex items-center justify-between gap-3 p-3 rounded-xl transition-colors border ${
-                s.isCurrent ? "bg-[rgba(0,0,0,0.02)] border-border shadow-[var(--shadow-sm)]" : "bg-card border-transparent hover:bg-[rgba(0,0,0,0.04)]"
-              }`}
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-8 h-8 rounded-lg bg-[rgba(0,0,0,0.06)] border border-border flex items-center justify-center flex-shrink-0">
-                  <DeviceIcon ua={s.userAgent} />
-                </div>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <p className="text-xs font-semibold truncate text-foreground">{s.device || "Unknown device"}</p>
-                    {s.isCurrent && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[rgba(22,163,74,0.08)] text-[#16a34a] border border-[rgba(22,163,74,0.20)] flex-shrink-0 font-bold">
-                        Current
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2 text-muted-foreground mt-0.5 font-medium">
-                    <Globe className="w-3 h-3 flex-shrink-0" />
-                    <p className="text-xs truncate">{s.ip || "Unknown IP"}</p>
-                    <span className="text-border">·</span>
-                    <Clock className="w-3 h-3 flex-shrink-0" />
-                    <p className="text-xs">{formatDate(s.lastActive)}</p>
-                  </div>
-                  <p className="text-[11px] text-muted-foreground/80 mt-1 font-medium">
-                    Signed in {formatDate(s.createdAt)} · Expires {formatDate(s.expiresAt)}
-                  </p>
-                </div>
-              </div>
-              {!s.isCurrent && (
-                <button
-                  onClick={() => revoke(s.id)}
-                  disabled={revoking === s.id}
-                  className="text-muted-foreground hover:text-[#dc2626] transition-colors p-1.5 rounded-lg hover:bg-[rgba(220,38,38,0.06)] flex-shrink-0 cursor-pointer"
-                >
-                  {revoking === s.id
-                    ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    : <X className="w-3.5 h-3.5" />}
-                </button>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {sessions.some((s) => !s.isCurrent) && (
-        <Button
-          variant="outline"
-          onClick={revokeAll}
-          loading={revoking === "all"}
-          className="mt-4 w-full sm:w-auto border-[rgba(220,38,38,0.15)] text-[#dc2626] hover:bg-[rgba(220,38,38,0.06)] hover:text-[#dc2626]"
-        >
-          <Trash2 className="w-4 h-4" />
-          Sign out all other sessions
-        </Button>
-      )}
     </SectionCard>
   )
 }
@@ -551,7 +401,7 @@ function DangerZone() {
   )
 }
 
-export function ProfileClient({ initialSessions }: { initialSessions: ActiveSession[] }) {
+export function ProfileClient() {
   const { data: session, update } = useSession()
 
   useEffect(() => {
@@ -591,8 +441,6 @@ export function ProfileClient({ initialSessions }: { initialSessions: ActiveSess
       <PersonalInfoSection session={session} />
 
       <PasswordSection />
-
-      <SessionsSection initialSessions={initialSessions} />
 
       <DangerZone />
 

@@ -1,6 +1,13 @@
-"use client"
-
+import type { Metadata } from "next"
 import { Mail, ArrowRight, ShieldCheck, Building2, Globe, Users } from "lucide-react"
+
+export const metadata: Metadata = {
+  title: "Contact Enterprise Sales",
+  description: "Talk to the Lex AI enterprise team about unlimited parsing, on-premise deployment, custom integrations, and volume discounts.",
+  alternates: { canonical: "/contact-sales" },
+  openGraph: { title: "Lex AI — Contact Enterprise Sales", description: "Talk to the Lex AI enterprise team about unlimited parsing, on-premise deployment, custom integrations, and volume discounts." },
+  twitter: { title: "Lex AI — Contact Enterprise Sales", description: "Talk to the Lex AI enterprise team about unlimited parsing, on-premise deployment, custom integrations, and volume discounts." },
+}
 import { BackToWebsite } from "@/components/ui/back-to-website"
 
 export default function ContactSalesPage() {

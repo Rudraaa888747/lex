@@ -16,12 +16,13 @@ export function LimitReachedModal({ isOpen, onClose, userPlan }: LimitReachedMod
   return (
     <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="relative w-full max-w-md bg-card rounded-3xl shadow-2xl overflow-hidden border border-border animate-in zoom-in-95 duration-200">
-        <button 
-          onClick={onClose}
-          className="absolute top-4 right-4 p-2 rounded-full hover:bg-[rgba(0,0,0,0.05)] transition-colors z-10"
-        >
-          <X className="w-5 h-5 text-muted-foreground" />
-        </button>
+      <button
+        onClick={onClose}
+        className="absolute top-4 right-4 p-2 hover:bg-muted rounded-lg transition-colors cursor-pointer"
+        aria-label="Close"
+      >
+        <X className="w-5 h-5" />
+      </button>
 
         <div className="p-8">
           <div className="flex flex-col items-center text-center">
