@@ -1,9 +1,16 @@
 import NextAuth from "next-auth"
 import { NextResponse } from "next/server"
 
-// Minimal edge-compatible auth config
 const { auth } = NextAuth({
   providers: [],
+  callbacks: {
+    session({ session, token }) {
+      if (session.user) {
+        (session.user as any).role = token.role
+      }
+      return session
+    },
+  },
 })
 
 export default auth((req) => {
