@@ -1,9 +1,9 @@
 "use client"
 
+import { useEffect } from "react"
 import { useSession } from "next-auth/react"
-import { redirect } from "next/navigation"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 import { cn } from "@/lib/helpers"
 import { LayoutDashboard, Users, BarChart3, Activity, CreditCard, ChevronRight, Shield } from "lucide-react"
 
@@ -20,7 +20,20 @@ import AdminLoading from "./loading"
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession()
+  const router = useRouter()
   const pathname = usePathname()
+
+  // Strict check: only users with the ADMIN role are allowed in the admin panel
+  const isAuthorized = status === "authenticated" && session?.user?.role === "ADMIN"
+  const isUnauthorized = status === "unauthenticated" || (status === "authenticated" && !isAuthorized)
+
+  // Client-side redirect (redirect() from next/navigation is server-only and unsupported in a Client Component)
+  useEffect(() => {
+    if (pathname === "/admin/login") return
+    if (isUnauthorized) {
+      router.replace("/admin/login")
+    }
+  }, [pathname, isUnauthorized, router])
 
   // If we are already on the admin login page, just render it without the sidebar
   if (pathname === "/admin/login") {
@@ -31,12 +44,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     )
   }
 
-  // Strict check: only users with the ADMIN role are allowed in the admin panel
-  const isAuthorized = status === "authenticated" && session?.user?.role === "ADMIN"
-
-  // Avoid redirecting while loading, but redirect if strictly unauthenticated or unauthorized
-  if (status === "unauthenticated" || (status === "authenticated" && !isAuthorized)) {
-    redirect("/admin/login")
+  // Prevent the admin shell from flashing while an unauthorized redirect is in flight
+  if (isUnauthorized) {
+    return (
+      <div className="min-h-screen bg-background">
+        <AdminLoading />
+      </div>
+    )
   }
 
   const isLoading = status === "loading"
