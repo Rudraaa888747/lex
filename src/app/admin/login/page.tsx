@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { signIn, getSession, signOut } from "next-auth/react"
+import { signIn, getSession, signOut, useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,6 +11,7 @@ import { motion } from "framer-motion"
 
 export default function AdminLoginPage() {
   const router = useRouter()
+  const { update } = useSession()
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [form, setForm] = useState({ email: "", password: "" })
@@ -39,6 +40,7 @@ export default function AdminLoginPage() {
       }
 
       showToast("Admin access granted", "success")
+      await update()
       router.push("/admin")
       router.refresh()
     } catch {
