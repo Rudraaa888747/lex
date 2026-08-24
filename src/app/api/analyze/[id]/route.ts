@@ -128,7 +128,7 @@ export async function POST(
                 jurisdictionInsights: JSON.stringify(analysisData.jurisdictionInsights || {}),
                 language: document.language || "EN",
                 status: "COMPLETED",
-                tokensUsed: 1500,
+                tokensUsed: analysisData.tokensUsed,
               },
             })
 
