@@ -93,7 +93,10 @@ export default function AdminAIMonitoringPage() {
   }
 
   useEffect(() => {
-    load()
+    const timeoutId = setTimeout(() => {
+      load()
+    }, 0)
+    return () => clearTimeout(timeoutId)
   }, [])
 
   const statCards: {
