@@ -113,6 +113,7 @@ model Analysis {
 
   @@index([userId])
   @@index([userId, createdAt(sort: Desc)])
+  @@index([createdAt])
 }
 
 model ChatSession {

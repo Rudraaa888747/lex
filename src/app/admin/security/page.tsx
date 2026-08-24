@@ -17,7 +17,7 @@ export default function AdminSecurityPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl sm:text-3xl font-bold">Security</h1>
-        <p className="text-[#9aa0a6] mt-1">Security settings and status</p>
+        <p className="text-muted-foreground mt-1">Security settings and status</p>
       </div>
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -29,7 +29,7 @@ export default function AdminSecurityPage() {
               </div>
               <div>
                 <p className="font-semibold text-sm">{item.label}</p>
-                <p className="text-xs text-[#9aa0a6]">{item.value}</p>
+                <p className="text-xs text-muted-foreground">{item.value}</p>
               </div>
             </div>
             <Badge variant="success" size="sm">{item.status}</Badge>
@@ -45,15 +45,15 @@ export default function AdminSecurityPage() {
             { event: "API key rotation", user: "system", time: "1 day ago", severity: "Info" },
             { event: "New admin login", user: "admin@example.com", time: "2 days ago", severity: "Info" },
           ].map((evt, i) => (
-            <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-white/5 text-sm">
+            <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-muted text-sm">
               <div className="flex items-center gap-3">
-                <AlertTriangle className={`w-4 h-4 ${evt.severity === "Low" ? "text-warning" : "text-[#9aa0a6]"}`} />
+                <AlertTriangle className={`w-4 h-4 ${evt.severity === "Low" ? "text-warning" : "text-muted-foreground"}`} />
                 <div>
                   <p className="font-medium">{evt.event}</p>
-                  <p className="text-xs text-[#9aa0a6]">{evt.user}</p>
+                  <p className="text-xs text-muted-foreground">{evt.user}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-3 text-xs text-[#9aa0a6]">
+              <div className="flex items-center gap-3 text-xs text-muted-foreground">
                 <span>{evt.time}</span>
                 <Badge variant={evt.severity === "Low" ? "warning" : "secondary"} size="sm">{evt.severity}</Badge>
               </div>

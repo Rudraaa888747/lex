@@ -294,7 +294,7 @@ const AdvancedAnalysisSchema = {
   additionalProperties: false
 };
 
-async function executeAnalysis(content: string, title: string, language: string): Promise<AdvancedAnalysisResult> {
+async function executeAnalysis(content: string, title: string, language: string): Promise<{ result: AdvancedAnalysisResult; tokens: number }> {
   const maxChars = 100000; // Character-based safety cap, NOT a token count. Real chunking happens upstream in splitIntoChunks(); this is a defensive last-resort cap only.
   if (content.length > maxChars) {
     console.warn(`[ai.service] executeAnalysis received content longer than the safety cap (${content.length} > ${maxChars} chars) for "${title}". This should not happen if splitIntoChunks is sized correctly upstream — investigate.`)
@@ -318,7 +318,8 @@ async function executeAnalysis(content: string, title: string, language: string)
   });
 
   const raw = res.choices[0]?.message?.content || "{}";
-  return JSON.parse(raw) as AdvancedAnalysisResult
+  const tokens = res.usage?.total_tokens ?? 0;
+  return { result: JSON.parse(raw) as AdvancedAnalysisResult, tokens };
 }
 
 function mergeScoreBreakdowns(scores: ContractScoreBreakdown[]): ContractScoreBreakdown {
@@ -464,15 +465,17 @@ function isLikelyTemplateCollection(content: string) {
   return distinctTypes.length >= 2 && hasPlaceholders
 }
 
-export async function analyzeDocument(content: string, title: string, language: string = "English") {
+export async function analyzeDocument(content: string, title: string, language: string = "English"): Promise<AdvancedAnalysisResult & { tokensUsed: number }> {
   const langStr = language === "HI" ? "Hindi" : language === "GU" ? "Gujarati" : "English"
   const chunks = splitIntoChunks(content)
 
   if (chunks.length === 1) {
-    return normalizeAnalysisResult(await executeAnalysis(chunks[0], title, langStr), content)
+    const { result, tokens } = await executeAnalysis(chunks[0], title, langStr)
+    return { ...normalizeAnalysisResult(result, content), tokensUsed: tokens }
   }
 
   const results: AdvancedAnalysisResult[] = []
+  let totalTokens = 0
 
   const concurrency = 3
   for (let i = 0; i < chunks.length; i += concurrency) {
@@ -486,10 +489,11 @@ export async function analyzeDocument(content: string, title: string, language: 
       }
     })
     const batchResults = await Promise.all(batchPromises)
-    results.push(...batchResults)
+    results.push(...batchResults.map((r) => r.result))
+    totalTokens += batchResults.reduce((sum, r) => sum + r.tokens, 0)
   }
 
-  return mergeAnalysisResults(results, content)
+  return { ...mergeAnalysisResults(results, content), tokensUsed: totalTokens }
 }
 
 export async function chatWithDocument(message: string, context: string, language: string = "EN") {
