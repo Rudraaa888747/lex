@@ -20,9 +20,14 @@ interface BadgeProps {
   variant?: keyof typeof variantStyles
   size?: keyof typeof sizeStyles
   className?: string
+  /**
+   * Set role="status" only for badges that announce dynamic async updates.
+   * Static badges must not spam live regions.
+   */
+  live?: boolean
 }
 
-export function Badge({ children, variant = "default", size = "default", className }: BadgeProps) {
+export function Badge({ children, variant = "default", size = "default", className, live = false }: BadgeProps) {
   return (
     <span
       className={cn(
@@ -31,7 +36,7 @@ export function Badge({ children, variant = "default", size = "default", classNa
         sizeStyles[size],
         className
       )}
-      role="status"
+      role={live ? "status" : undefined}
     >
       {children}
     </span>

@@ -5,6 +5,7 @@ import { compare } from "bcryptjs"
 import { prisma } from "./database"
 import { touchCurrentSession } from "./session-metadata"
 import { getRequestMetadata } from "./request-metadata"
+import { loginLimiter } from "./rate-limit"
 
 declare module "next-auth" {
   interface Session {
@@ -46,8 +47,35 @@ const nextAuth = NextAuth({
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null
 
-        const email = credentials.email as string
+        const rawEmail = credentials.email as string
         const password = credentials.password as string
+
+        // H5: cap password length before bcrypt to prevent CPU DoS
+        // (register already caps at 128 — login must match)
+        if (typeof password !== "string" || password.length > 128 || password.length < 1) return null
+
+        // H6: normalize email the same way register does (trim + lowercase)
+        const email = typeof rawEmail === "string" ? rawEmail.trim().toLowerCase() : ""
+        if (!email || !email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) return null
+
+        // H1: brute-force protection on the credentials path.
+        // Key on server-observed IP + normalized email so one IP can't
+        // stuff many accounts and one account can't be hammered from many IPs
+        // without tripping the per-IP bucket.
+        try {
+          const meta = await getRequestMetadata()
+          const ip = meta.ip && meta.ip !== "Unknown" ? meta.ip : "unknown-ip"
+          const { success } = await loginLimiter.limit(`${ip}:${email}`)
+          if (!success) {
+            // Throwing surfaces a readable error in signIn("credentials").error
+            // instead of the generic "invalid credentials" null path.
+            throw new Error("Too many login attempts. Please try again in a few minutes.")
+          }
+        } catch (err) {
+          // Preserve the rate-limit throw; ignore metadata failures (fail open
+          // for IP resolution, the bcrypt check below still applies).
+          if (err instanceof Error && err.message.startsWith("Too many login attempts")) throw err
+        }
 
         const user = await prisma.user.findUnique({
           where: { email },
@@ -107,7 +135,14 @@ const nextAuth = NextAuth({
           token.sessionToken = sessionToken
           const expires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
           
-          const reqMeta = await getRequestMetadata()
+          // M5: headers() is not guaranteed inside jwt() (edge/build paths).
+          // Never let metadata collection fail the sign-in.
+          let reqMeta = { ip: "Unknown", userAgent: "Unknown" }
+          try {
+            reqMeta = await getRequestMetadata()
+          } catch {
+            // keep Unknown fallbacks
+          }
           
           await prisma.session.create({
             data: {
@@ -130,12 +165,47 @@ const nextAuth = NextAuth({
     async session({ session, token }) {
       if (session.user && token) {
         if (token.sessionToken) {
+          // C1+C2: enforce server-side revocation AND expiry, and re-validate
+          // the user on every session read so suspend/role changes take
+          // effect immediately instead of lingering in the 30-day JWT.
           const dbSession = await prisma.session.findUnique({
             where: { sessionToken: token.sessionToken as string },
-            select: { id: true }
+            select: {
+              id: true,
+              expires: true,
+              userId: true,
+              user: { select: { suspended: true, role: true, plan: true } },
+            },
           })
           if (!dbSession) return {} as Session // Revoked
+          if (dbSession.expires <= new Date()) {
+            // Opportunistic cleanup of the expired row
+            await prisma.session.deleteMany({
+              where: { sessionToken: token.sessionToken as string },
+            })
+            return {} as Session // Expired
+          }
+          if (dbSession.user?.suspended) {
+            await prisma.session.deleteMany({
+              where: { sessionToken: token.sessionToken as string },
+            })
+            return {} as Session // Suspended
+          }
           session.sessionToken = token.sessionToken as string
+
+          // Prefer fresh DB role/plan over the stale JWT claim (fixes M3
+          // where a demoted admin kept passing edge checks on JWT alone).
+          const sessionUser = session.user as any
+          sessionUser.id = token.id
+          sessionUser.role = dbSession.user?.role ?? token.role
+          sessionUser.plan = dbSession.user?.plan ?? token.plan
+          sessionUser.suspended = Boolean(dbSession.user?.suspended)
+          sessionUser.createdAt = token.createdAt
+
+          if (token.name) sessionUser.name = token.name
+          if (token.email) sessionUser.email = token.email
+          if (token.picture) sessionUser.image = token.picture
+          return session
         }
 
         const sessionUser = session.user as any
@@ -153,9 +223,30 @@ const nextAuth = NextAuth({
       return session
     },
   },
+  events: {
+    // C2: normal sign-outs must delete the hand-rolled Session row,
+    // otherwise the table fills with orphans and "revocation" never happens.
+    // Auth.js v5 passes { session, token } for JWT-strategy signOut.
+    async signOut(message) {
+      try {
+        const token = (message as any)?.token as { sessionToken?: unknown } | undefined
+        const session = (message as any)?.session as { sessionToken?: unknown } | undefined
+        const sessionToken = token?.sessionToken ?? session?.sessionToken
+        if (typeof sessionToken === "string" && sessionToken.length > 0) {
+          await prisma.session.deleteMany({ where: { sessionToken } })
+        }
+      } catch {
+        // Cleanup is best-effort — never fail sign-out because of it
+      }
+    },
+  },
 })
 
 export const { handlers, signIn, signOut } = nextAuth
+
+// Shared middleware/proxy wrapper — same NextAuth instance, so JWT
+// verification can never drift from the app config (fixes M2).
+export const authMiddleware = nextAuth.auth
 
 export async function auth(): Promise<Session | null> {
   const session = await nextAuth.auth()
@@ -175,7 +266,11 @@ export async function auth(): Promise<Session | null> {
   }
 
   if (session?.user?.id && session?.sessionToken) {
-    await touchCurrentSession(session.user.id, session.sessionToken)
+    // P1 perf: activity tracking is best-effort — never block the response
+    // on a DB write. With 400ms+ DB latency this await cost every API call
+    // and page load a full extra round trip. Errors are swallowed inside
+    // the throttled writer (it no-ops within the 5-min window).
+    void touchCurrentSession(session.user.id, session.sessionToken).catch(() => {})
   }
 
   return session

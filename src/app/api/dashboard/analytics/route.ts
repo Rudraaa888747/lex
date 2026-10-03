@@ -37,6 +37,12 @@ export async function GET() {
     sixMonthsAgo.setDate(1);
     sixMonthsAgo.setHours(0, 0, 0, 0);
 
+    // Fresh plan from DB — the JWT claim can lag behind admin changes.
+    const freshUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { plan: true },
+    });
+
     // 1. Perform database-level aggregations for totals
     const [
       docAgg, 
@@ -95,11 +101,16 @@ export async function GET() {
       const key = monthKey(analysis.createdAt)
       if (trendMap.has(key)) trendMap.set(key, trendMap.get(key)! + 1)
 
+      // One slice per document (worst flag wins) — counting every flag
+      // lets a single noisy analysis dominate the whole pie.
       const redFlags = parseJson<Array<{ severityScore?: number }>>(analysis.riskAssessment, [])
+      let worst = 0
       for (const flag of redFlags) {
-        const severity = flag.severityScore || 0
-        if (severity >= 8) highRisk += 1
-        else if (severity >= 5) mediumRisk += 1
+        worst = Math.max(worst, flag.severityScore || 0)
+      }
+      if (redFlags.length > 0) {
+        if (worst >= 8) highRisk += 1
+        else if (worst >= 5) mediumRisk += 1
         else lowRisk += 1
       }
 
@@ -116,6 +127,7 @@ export async function GET() {
         documents: totalDocuments,
         analyses: analysisCount,
         avgScore: scoredAnalyses ? Number((totalScore / scoredAnalyses).toFixed(1)) : 0,
+        avgScoreWindowMonths: 6,
         avgFileSizeMb: totalDocuments
           ? Number((totalFileSize / totalDocuments / 1024 / 1024).toFixed(2))
           : 0,
@@ -125,10 +137,11 @@ export async function GET() {
         { name: "Medium", value: mediumRisk },
         { name: "Low", value: lowRisk },
       ],
+      riskDistributionNote: "Counts documents by worst flag severity (last 6 months).",
       monthlyActivity: Array.from(monthlyMap, ([name, uploads]) => ({ name, uploads })),
       analysisTrends: Array.from(trendMap, ([name, analysesCount]) => ({ name, analyses: analysesCount })),
       userInsights: {
-        plan: session.user.plan,
+        plan: freshUser?.plan ?? session.user.plan,
         readyDocuments: readyDocs,
         completedDocuments: completedDocs,
       },

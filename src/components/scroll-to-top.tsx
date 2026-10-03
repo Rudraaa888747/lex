@@ -7,7 +7,9 @@ export function ScrollToTop() {
   const pathname = usePathname()
 
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "instant" })
+    // Never fight hash-anchor navigation or saved scroll restores.
+    if (window.location.hash) return
+    window.scrollTo({ top: 0, behavior: "auto" as ScrollBehavior })
   }, [pathname])
 
   return null

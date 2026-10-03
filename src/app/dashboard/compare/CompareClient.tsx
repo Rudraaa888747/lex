@@ -24,6 +24,7 @@ import { getUserFriendlyErrorMessage } from "@/lib/api-error"
 interface DocumentItem {
   id: string
   title: string
+  type?: string
 }
 
 interface ComparisonClause {
@@ -54,12 +55,14 @@ function riskLevel(text: string): {
   bg: string
   border: string
 } {
+  // Word boundaries — substring matching flagged "highlight" as High
+  // and "follow"/"below" as Low.
   const t = text.toLowerCase()
-  if (t.includes("critical") || t.includes("severe") || t.includes("high"))
+  if (/\b(critical|severe|high)\b/.test(t))
     return { label: "High", color: "text-red-700", bg: "bg-red-50", border: "border-red-600/20" }
-  if (t.includes("medium") || t.includes("moderate") || t.includes("warning"))
+  if (/\b(medium|moderate|warning)\b/.test(t))
     return { label: "Medium", color: "text-amber-700", bg: "bg-amber-50", border: "border-amber-600/20" }
-  if (t.includes("low") || t.includes("minor"))
+  if (/\b(low|minor)\b/.test(t))
     return { label: "Low", color: "text-emerald-700", bg: "bg-emerald-50", border: "border-emerald-600/20" }
   return { label: "Info", color: "text-muted-foreground", bg: "bg-card", border: "border-border" }
 }
@@ -98,8 +101,15 @@ function SelectDropdown({
     function handleOutside(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
     }
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false)
+    }
     document.addEventListener("mousedown", handleOutside)
-    return () => document.removeEventListener("mousedown", handleOutside)
+    document.addEventListener("keydown", handleKey)
+    return () => {
+      document.removeEventListener("mousedown", handleOutside)
+      document.removeEventListener("keydown", handleKey)
+    }
   }, [])
 
   const selected = documents.find((d) => d.id === value)
@@ -119,14 +129,17 @@ function SelectDropdown({
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        aria-haspopup="listbox"
+        aria-label={label}
         className="w-full h-14 rounded-xl border border-border glass-subtle text-foreground px-4 text-[0.95rem] flex items-center justify-between gap-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-all hover:glass-default hover:border-[rgba(0,0,0,0.15)] active:scale-[0.99] shadow-[var(--shadow-sm)]"
       >
         <span className="flex items-center gap-2.5 min-w-0 flex-1 truncate">
           {selected ? (
             <>
-              <FileText className="w-4 h-4 shrink-0 text-foreground" />
+              <FileText className="w-4 h-4 shrink-0 text-foreground" aria-hidden="true" />
               <span className="truncate text-foreground font-semibold">{selected.title}</span>
-              <DocBadge type={detectDocType(selected.title)} />
+              <DocBadge type={selected.type || detectDocType(selected.title)} />
             </>
           ) : (
             <span className="text-muted-foreground">{placeholder}</span>
@@ -140,7 +153,7 @@ function SelectDropdown({
       {/* Dropdown */}
       {open && (
         <div className="relative z-50">
-          <div className="absolute top-1 left-0 right-0 max-h-64 overflow-y-auto rounded-xl border border-border bg-card shadow-[var(--shadow-lg)]">
+          <div role="listbox" aria-label={label} className="absolute top-1 left-0 right-0 max-h-64 overflow-y-auto rounded-xl border border-border bg-card shadow-[var(--shadow-lg)]">
             {/* Clear option */}
             <button
               type="button"
@@ -165,6 +178,8 @@ function SelectDropdown({
                 <button
                   key={d.id}
                   type="button"
+                  role="option"
+                  aria-selected={isSelected}
                   disabled={isExcluded}
                   onClick={() => { if (!isExcluded) { onChange(d.id); setOpen(false) } }}
                   className={`w-full text-left px-4 py-3 text-sm flex items-center gap-3 transition-colors ${
@@ -175,9 +190,9 @@ function SelectDropdown({
                         : "text-foreground hover:bg-[rgba(0,0,0,0.04)]"
                   }`}
                 >
-                  <FileText className="w-4 h-4 shrink-0 text-foreground" />
+                  <FileText className="w-4 h-4 shrink-0 text-foreground" aria-hidden="true" />
                   <span className="truncate flex-1 text-sm">{d.title}</span>
-                  <DocBadge type={detectDocType(d.title)} />
+                  <DocBadge type={d.type || detectDocType(d.title)} />
                   {isSelected && <CheckCircle className="w-3.5 h-3.5 shrink-0 text-emerald-600" />}
                   {isExcluded && (
                     <span className="text-[9px] uppercase tracking-wider text-muted-foreground shrink-0 font-bold">In use</span>
@@ -228,7 +243,7 @@ function ResultSection({
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
-export function CompareClient({ initialDocuments }: { initialDocuments: DocumentItem[] }) {
+export function CompareClient({ initialDocuments, initialLanguage = "EN" }: { initialDocuments: DocumentItem[]; initialLanguage?: string }) {
   const router = useRouter()
   const [doc1, setDoc1] = useState("")
   const [doc2, setDoc2] = useState("")
@@ -239,7 +254,10 @@ export function CompareClient({ initialDocuments }: { initialDocuments: Document
   const fileRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "instant" })
+    const timeoutId = setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: "auto" as ScrollBehavior })
+    }, 0)
+    return () => clearTimeout(timeoutId)
   }, [])
 
   const handleUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -249,13 +267,14 @@ export function CompareClient({ initialDocuments }: { initialDocuments: Document
     try {
       const form = new FormData()
       form.append("file", file)
-      form.append("language", "EN") // Provide a default language since the upload API requires it
+      // Respect the user's saved analysis language instead of forcing English.
+      form.append("language", initialLanguage)
       const res = await fetch("/api/documents/upload", { method: "POST", body: form })
-      if (!res.ok) throw new Error((await res.json()).error || "Upload failed")
-      const data = await res.json()
-      setDocuments((prev) => [...prev, { id: data.document.id, title: data.document.title }])
-      if (!doc1) setDoc1(data.document.id)
-      else if (!doc2) setDoc2(data.document.id)
+      const payload = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(typeof payload.error === "string" ? payload.error : "Upload failed")
+      setDocuments((prev) => [...prev, { id: payload.document.id, title: payload.document.title, type: payload.document.type }])
+      if (!doc1) setDoc1(payload.document.id)
+      else if (!doc2) setDoc2(payload.document.id)
       showToast("Document uploaded", "success")
     } catch (err) {
       showToast(getUserFriendlyErrorMessage(err instanceof Error ? err.message : null), "error")
@@ -263,7 +282,7 @@ export function CompareClient({ initialDocuments }: { initialDocuments: Document
       setUploading(false)
       if (fileRef.current) fileRef.current.value = ""
     }
-  }, [doc1, doc2])
+  }, [doc1, doc2, initialLanguage])
 
   const handleCompare = async () => {
     if (!doc1 || !doc2) {
@@ -275,19 +294,29 @@ export function CompareClient({ initialDocuments }: { initialDocuments: Document
       return
     }
     setComparing(true)
-    setResult(null)
     try {
       const res = await fetch("/api/compare", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ documentIds: [doc1, doc2] }),
       })
+      const data = await res.json().catch(() => ({}))
       if (res.ok) {
-        const data = await res.json()
         const raw = data.result
-        setResult(raw ? (typeof raw === "string" ? JSON.parse(raw) : raw) : data)
+        try {
+          // Strip markdown fences the model sometimes adds around JSON.
+          const rawText = typeof raw === "string" ? raw.replace(/```json\s*/gi, "").replace(/```/g, "").trim() : raw
+          setResult(rawText ? (typeof rawText === "string" ? JSON.parse(rawText) : rawText) : data)
+        } catch {
+          // Don't leave a stale comparison on screen after a bad payload.
+          setResult(null)
+          showToast("Comparison returned an unreadable result. Try again.", "error")
+        }
       } else {
-        showToast("Comparison failed. Try again.", "error")
+        showToast(
+          getUserFriendlyErrorMessage(typeof data.error === "string" ? data.error : null),
+          "error"
+        )
       }
     } catch {
       showToast("Comparison failed. Try again.", "error")
@@ -296,7 +325,7 @@ export function CompareClient({ initialDocuments }: { initialDocuments: Document
     }
   }
 
-  const canCompare = !!doc1 && !!doc2 && !comparing
+  const canCompare = !!doc1 && !!doc2 && doc1 !== doc2 && !comparing
 
   return (
     <div className="max-w-3xl mx-auto space-y-6 pb-12">
@@ -352,7 +381,7 @@ export function CompareClient({ initialDocuments }: { initialDocuments: Document
           <input
             ref={fileRef}
             type="file"
-            accept=".pdf,.docx,.txt,.doc"
+            accept=".pdf,.docx,.txt,.png,.jpg,.jpeg"
             className="hidden"
             onChange={handleUpload}
           />

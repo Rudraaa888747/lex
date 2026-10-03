@@ -26,6 +26,7 @@ export function SiteHeader() {
   const closeDropdown = useCallback(() => setDropdownOpen(false), [])
 
   const profileRef = useRef<HTMLDivElement>(null)
+  const profileToggleRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent | TouchEvent) {
@@ -36,6 +37,7 @@ export function SiteHeader() {
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
         setDropdownOpen(false)
+        profileToggleRef.current?.focus()
       }
     }
     if (dropdownOpen) {
@@ -55,11 +57,14 @@ export function SiteHeader() {
       {session?.user && (
         <div className="relative" ref={profileRef}>
           <button
+            ref={profileToggleRef}
             type="button"
             onClick={toggleDropdown}
             className="flex items-center gap-2.5 px-3 py-2 rounded-xl border border-border hover:bg-[rgba(0,0,0,0.04)] transition-all duration-200 cursor-pointer"
             aria-expanded={dropdownOpen}
-            aria-haspopup="true"
+            aria-haspopup="menu"
+            aria-controls="profile-menu"
+            aria-label="Account menu"
           >
             <div className="w-7 h-7 rounded-lg gradient-bg flex items-center justify-center text-[#FAF8F3] text-xs font-bold">
               {session.user.name?.charAt(0) || session.user.email?.charAt(0) || "U"}
@@ -68,7 +73,7 @@ export function SiteHeader() {
             <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${dropdownOpen ? "rotate-180" : ""}`} />
           </button>
           {dropdownOpen && (
-            <div className="glass-floating absolute right-0 top-full mt-2 w-56 rounded-2xl z-[260] p-2" role="menu">
+            <div id="profile-menu" className="glass-floating absolute right-0 top-full mt-2 w-56 rounded-2xl z-[260] p-2" role="menu" aria-label="Account">
                 <div className="px-3 py-2 text-xs text-muted-foreground border-b border-border mb-1">
                   {session.user?.role === "ADMIN" ? "Admin" : "User"}
                 </div>
@@ -103,7 +108,7 @@ export function SiteHeader() {
                 )}
                 <hr className="my-1 border-border" />
                 <button
-                  onClick={() => signOut({ callbackUrl: "/" })}
+                  onClick={() => { void signOut({ callbackUrl: "/" }) }}
                   className="flex w-full items-center gap-2.5 px-3 py-2 rounded-xl text-sm text-danger hover:bg-danger/5 transition-colors cursor-pointer"
                   role="menuitem"
                 >
@@ -146,7 +151,7 @@ export function SiteHeader() {
             </div>
           </div>
         ) : (
-          <nav className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <nav aria-label="Primary" className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16 lg:h-20">
               <Link href="/" className="flex items-center gap-3 group shrink-0">
                 <div className="relative h-8 w-8 lg:h-9 lg:w-9 flex items-center justify-center shrink-0">
@@ -175,66 +180,7 @@ export function SiteHeader() {
               <div className="hidden md:flex items-center gap-3">
 
                 {session?.user ? (
-                  <div className="relative" ref={profileRef}>
-                    <button
-                      type="button"
-                      onClick={toggleDropdown}
-                      className="flex items-center gap-2.5 px-4 py-2 rounded-xl border border-border hover:bg-[rgba(0,0,0,0.04)] transition-all duration-200 cursor-pointer"
-                      aria-expanded={dropdownOpen}
-                      aria-haspopup="true"
-                    >
-                      <div className="w-7 h-7 rounded-lg gradient-bg flex items-center justify-center text-[#FAF8F3] text-xs font-bold">
-                        {session.user.name?.charAt(0) || session.user.email?.charAt(0) || "U"}
-                      </div>
-                      <span className="text-sm font-medium text-foreground">{session.user.name || session.user.email}</span>
-                      <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${dropdownOpen ? "rotate-180" : ""}`} />
-                    </button>
-                    {dropdownOpen && (
-                      <div className="glass-floating absolute right-0 top-full mt-2 w-56 rounded-2xl z-[260] p-2" role="menu">
-                          <div className="px-3 py-2 text-xs text-muted-foreground border-b border-border mb-1">
-                            {session.user?.role === "ADMIN" ? "Admin" : "User"}
-                          </div>
-                          <Link
-                            href="/dashboard"
-                            className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm text-foreground hover:bg-[rgba(0,0,0,0.04)] transition-colors"
-                            onClick={closeDropdown}
-                            role="menuitem"
-                          >
-                            <LayoutDashboard className="w-4 h-4" />
-                            Dashboard
-                          </Link>
-                          <Link
-                            href="/dashboard/profile"
-                            className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm text-foreground hover:bg-[rgba(0,0,0,0.04)] transition-colors"
-                            onClick={closeDropdown}
-                            role="menuitem"
-                          >
-                            <User className="w-4 h-4" />
-                            Profile
-                          </Link>
-                          {session.user?.role === "ADMIN" && (
-                            <Link
-                              href="/admin"
-                              className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm text-foreground hover:bg-[rgba(0,0,0,0.04)] transition-colors"
-                              onClick={closeDropdown}
-                              role="menuitem"
-                            >
-                              <LayoutDashboard className="w-4 h-4" />
-                              Admin Panel
-                            </Link>
-                          )}
-                          <hr className="my-1 border-border" />
-                          <button
-                            onClick={() => signOut({ callbackUrl: "/" })}
-                            className="flex w-full items-center gap-2.5 px-3 py-2 rounded-xl text-sm text-danger hover:bg-danger/5 transition-colors cursor-pointer"
-                            role="menuitem"
-                          >
-                            <LogOut className="w-4 h-4" />
-                            Sign Out
-                          </button>
-                        </div>
-                    )}
-                  </div>
+                  renderProfileDropdown()
                 ) : (
                   !isAuth && (
                     <>
@@ -254,13 +200,14 @@ export function SiteHeader() {
                 className="md:hidden p-2 rounded-xl hover:bg-[rgba(0,0,0,0.04)] transition-colors cursor-pointer text-foreground"
                 aria-label={mobileOpen ? "Close menu" : "Open menu"}
                 aria-expanded={mobileOpen}
+                aria-controls="mobile-menu"
               >
-                {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                {mobileOpen ? <X className="w-5 h-5" aria-hidden="true" /> : <Menu className="w-5 h-5" aria-hidden="true" />}
               </button>
             </div>
 
-            {mobileOpen && (
-              <div className="md:hidden border-t border-border py-4 space-y-3 glass-floating absolute top-full left-0 right-0 mt-0 rounded-b-2xl px-4 pb-6">
+            {mobileOpen && !isAuth && (
+              <div id="mobile-menu" className="md:hidden border-t border-border py-4 space-y-3 glass-floating absolute top-full left-0 right-0 mt-0 rounded-b-2xl px-4 pb-6">
                 <Link href="/features" className="block px-3 py-2 text-sm rounded-xl text-foreground hover:bg-[rgba(0,0,0,0.04)]" onClick={closeMobile}>
                   Features
                 </Link>
@@ -280,7 +227,7 @@ export function SiteHeader() {
                       Dashboard
                     </Link>
                     <button
-                      onClick={() => signOut({ callbackUrl: "/" })}
+                      onClick={() => { void signOut({ callbackUrl: "/" }) }}
                       className="block w-full text-left px-3 py-2 text-sm rounded-xl text-danger hover:bg-danger/5 cursor-pointer"
                     >
                       Sign Out
@@ -296,9 +243,6 @@ export function SiteHeader() {
                     </Link>
                   </div>
                 )}
-                <div className="flex justify-center pt-4">
-
-                </div>
               </div>
             )}
           </nav>

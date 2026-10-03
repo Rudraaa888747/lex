@@ -9,6 +9,7 @@ export const metadata: Metadata = {
   twitter: { title: "Lex AI — Contact Enterprise Sales", description: "Talk to the Lex AI enterprise team about unlimited parsing, on-premise deployment, custom integrations, and volume discounts." },
 }
 import { BackToWebsite } from "@/components/ui/back-to-website"
+import { salesEmail } from "@/lib/site"
 
 export default function ContactSalesPage() {
   return (
@@ -81,17 +82,17 @@ export default function ContactSalesPage() {
             </p>
             
             <a 
-              href="mailto:rudrachokshi441@gmail.com?subject=Enterprise%20Inquiry%20-%20Lex%20AI" 
+              href={`mailto:${salesEmail}?subject=Enterprise%20Inquiry%20-%20Lex%20AI`} 
               className="inline-flex w-full"
             >
               <div className="w-full bg-primary-btn hover:bg-primary-btn/90 text-white font-medium py-4 px-6 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-xl group">
-                rudrachokshi441@gmail.com
+                {salesEmail}
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </div>
             </a>
 
             <p className="text-xs text-muted-foreground mt-6">
-              Or call us at +91 (Available for Enterprise customers)
+              Or reach us through your enterprise support channel
             </p>
           </div>
         </div>

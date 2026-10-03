@@ -31,32 +31,51 @@ export async function GET(req: Request) {
     const url = new URL(req.url)
     const limit = Math.min(parseInt(url.searchParams.get("limit") || String(PAGE_SIZE), 10) || PAGE_SIZE, 100)
     const cursor = decodeCursor(url.searchParams.get("cursor"))
+    const search = url.searchParams.get("search")?.trim().substring(0, 100) || ""
 
-    const where = cursor
+    // Server-side search so admins can find users beyond the loaded page.
+    const searchFilter = search
       ? {
           OR: [
-            { createdAt: { lt: cursor.createdAt } },
-            { createdAt: { equals: cursor.createdAt }, id: { lt: cursor.id } },
+            { email: { contains: search, mode: "insensitive" as const } },
+            { name: { contains: search, mode: "insensitive" as const } },
           ],
         }
       : {}
 
-    const users = await prisma.user.findMany({
-      where,
-      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-      take: limit + 1,
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        plan: true,
-        suspended: true,
-        createdAt: true,
-        emailVerified: true,
-        image: true,
-      },
-    })
+    const where = cursor
+      ? {
+          AND: [
+            searchFilter,
+            {
+              OR: [
+                { createdAt: { lt: cursor.createdAt } },
+                { createdAt: { equals: cursor.createdAt }, id: { lt: cursor.id } },
+              ],
+            },
+          ],
+        }
+      : searchFilter
+
+    const [users, totalCount] = await Promise.all([
+      prisma.user.findMany({
+        where,
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        take: limit + 1,
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          plan: true,
+          suspended: true,
+          createdAt: true,
+          emailVerified: true,
+          image: true,
+        },
+      }),
+      prisma.user.count({ where: searchFilter }),
+    ])
 
     const hasMore = users.length > limit
     const pageUsers = hasMore ? users.slice(0, limit) : users
@@ -70,6 +89,7 @@ export async function GET(req: Request) {
       })),
       nextCursor,
       hasMore,
+      totalCount,
     })
   } catch (error) {
     return apiError(error, "Internal server error", 500)

@@ -70,7 +70,7 @@ export default function RegisterPage() {
       }
 
       showToast("Account created! Please sign in.", "success")
-      router.push("/login")
+      router.push(`/login?email=${encodeURIComponent(form.email.trim().toLowerCase())}`)
     } catch {
       showToast("Something went wrong", "error")
     } finally {
@@ -156,7 +156,8 @@ export default function RegisterPage() {
                   <Input
                     label="Password"
                     type={showPassword ? "text" : "password"}
-                    placeholder="Min. 8 characters"
+                    placeholder="Min. 8 characters + number/symbol"
+                    maxLength={128}
                     value={form.password}
                     onChange={(e) => setForm({ ...form, password: e.target.value })}
                     required
@@ -166,7 +167,9 @@ export default function RegisterPage() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-[40px] p-1 text-muted-foreground hover:text-foreground cursor-pointer transition-colors rounded-md hover:bg-[rgba(0,0,0,0.04)]"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    aria-pressed={showPassword}
+                    className="absolute right-3 top-[36px] p-1 text-muted-foreground hover:text-foreground cursor-pointer transition-colors rounded-md hover:bg-[rgba(0,0,0,0.04)]"
                     suppressHydrationWarning
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -218,23 +221,25 @@ export default function RegisterPage() {
                 )}
               </AnimatePresence>
 
-              {/* Terms Agreement */}
+              {/* Terms Agreement — real checkbox so keyboard + screen readers work */}
               <div className="pt-2 pb-2">
-                <button
-                  type="button"
-                  onClick={() => setTermsAgreed(!termsAgreed)}
-                  className="flex items-start gap-2.5 cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm text-left"
-                >
-                  <div className={`w-5 h-5 mt-0.5 shrink-0 rounded flex items-center justify-center border transition-all duration-200 ${termsAgreed ? 'bg-primary-btn border-primary-btn' : 'bg-[rgba(255,255,255,0.5)] border-border/80 group-hover:border-[rgba(0,0,0,0.3)]'}`}>
+                <label className="flex items-start gap-2.5 cursor-pointer group rounded-sm text-left">
+                  <input
+                    type="checkbox"
+                    checked={termsAgreed}
+                    onChange={(e) => setTermsAgreed(e.target.checked)}
+                    className="sr-only"
+                  />
+                  <div aria-hidden="true" className={`w-5 h-5 mt-0.5 shrink-0 rounded flex items-center justify-center border transition-all duration-200 ${termsAgreed ? 'bg-primary-btn border-primary-btn' : 'bg-[rgba(255,255,255,0.5)] border-border/80 group-hover:border-[rgba(0,0,0,0.3)]'}`}>
                     <Check className={`w-3.5 h-3.5 text-white transition-transform duration-200 ${termsAgreed ? 'scale-100 opacity-100' : 'scale-50 opacity-0'}`} />
                   </div>
                   <span className="text-sm text-muted-foreground group-hover:text-foreground/90 transition-colors leading-relaxed">
                     I agree to the{" "}
-                    <Link href="/terms" target="_blank" onClick={(e) => e.stopPropagation()} className="text-blue-500 hover:text-blue-400 hover:underline">Terms of Service</Link>{" "}
+                    <Link href="/terms" target="_blank" className="text-blue-500 hover:text-blue-400 hover:underline">Terms of Service</Link>{" "}
                     and{" "}
-                    <Link href="/privacy" target="_blank" onClick={(e) => e.stopPropagation()} className="text-blue-500 hover:text-blue-400 hover:underline">Privacy Policy</Link>
+                    <Link href="/privacy" target="_blank" className="text-blue-500 hover:text-blue-400 hover:underline">Privacy Policy</Link>
                   </span>
-                </button>
+                </label>
               </div>
 
               <Button 

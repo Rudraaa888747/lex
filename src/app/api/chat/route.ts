@@ -5,6 +5,8 @@ import { prisma } from "@/lib/database"
 import { chatWithDocument } from "@/services/ai.service"
 import { chatLimiter } from "@/lib/rate-limit"
 
+export const maxDuration = 60
+
 export async function POST(request: NextRequest) {
   try {
     const session = await auth()
@@ -33,13 +35,26 @@ export async function POST(request: NextRequest) {
     let context = ""
     let docLanguage = "EN"
     if (documentId) {
+      if (typeof documentId !== "string") {
+        return Response.json({ error: "Invalid documentId" }, { status: 400 })
+      }
+      // A8: explicit 404 when a selected doc is missing/empty instead of
+      // silently answering as "General Chat" — avoids confusion and
+      // confirms the doc belongs to this user.
       const document = await prisma.document.findFirst({
         where: { id: documentId, userId: session.user.id },
       })
-      if (document?.content) {
-        context = document.content
-        docLanguage = document.language || "EN"
+      if (!document) {
+        return Response.json({ error: "Document not found" }, { status: 404 })
       }
+      if (!document.content) {
+        return Response.json(
+          { error: "Document text is not ready yet. Please wait for processing to finish." },
+          { status: 409 }
+        )
+      }
+      context = document.content
+      docLanguage = document.language || "EN"
     }
 
     const response = await chatWithDocument(message, context, docLanguage)

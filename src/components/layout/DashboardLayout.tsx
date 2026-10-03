@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/helpers"
-import { LayoutDashboard, FileText, Upload, GitCompare, History, User, MessageSquare, Settings, ChevronRight, Sparkles } from "lucide-react"
+import { LayoutDashboard, FileText, Upload, GitCompare, History, User, MessageSquare, Settings, ChevronRight, Sparkles, BarChart3 } from "lucide-react"
 
 const sidebarItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
@@ -11,6 +11,7 @@ const sidebarItems = [
   { icon: FileText, label: "My Documents", href: "/dashboard/documents" },
   { icon: MessageSquare, label: "AI Chat", href: "/dashboard/chat" },
   { icon: GitCompare, label: "Compare", href: "/dashboard/compare" },
+  { icon: BarChart3, label: "Analytics", href: "/dashboard/analytics" },
   { icon: History, label: "History", href: "/dashboard/history" },
   { icon: User, label: "Profile", href: "/dashboard/profile" },
   { icon: Settings, label: "Settings", href: "/dashboard/settings" },
@@ -30,13 +31,14 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             willChange: "transform"
           }}
         >
-          <nav className="space-y-1 flex-1">
+          <nav aria-label="Dashboard" className="space-y-1 flex-1">
             {sidebarItems.map((item) => {
               const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href))
               return (
                 <Link
                   key={item.href}
                   href={item.href}
+                  aria-current={isActive ? "page" : undefined}
                   className={cn(
                     "relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-[0.9rem] font-medium transition-all duration-200 group",
                     isActive
@@ -61,12 +63,12 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           </nav>
           <div className="pt-4 border-t border-border mt-4">
             <div className="rounded-xl bg-card border border-border p-4 relative overflow-hidden group">
-              <div className="absolute inset-0 bg-[rgba(0,0,0,0.02)] opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              <p className="text-xs font-bold text-foreground mb-1 relative z-10">Free Plan</p>
-              <p className="text-[11px] text-muted-foreground mb-3 relative z-10">3 of 3 documents used</p>
+              <div className="absolute inset-0 bg-[rgba(0,0,0,0.02)] opacity-0 group-hover:opacity-100 transition-opacity duration-500" aria-hidden="true" />
+              <p className="text-xs font-bold text-foreground mb-1 relative z-10">Need more documents?</p>
+              <p className="text-[11px] text-muted-foreground mb-3 relative z-10">Upgrade your plan for higher limits and premium features.</p>
               <Link href="/pricing" className="relative z-10">
                 <button className="w-full text-xs font-bold text-[#FAF8F3] bg-primary-btn hover:bg-primary-btn-hover rounded-lg py-2 px-3 transition-all duration-200 cursor-pointer flex items-center justify-center gap-1.5 active:scale-95 shadow-[var(--shadow-sm)] border border-[rgba(0,0,0,0.10)]">
-                  Upgrade <Sparkles className="w-3 h-3" />
+                  Upgrade <Sparkles className="w-3 h-3" aria-hidden="true" />
                 </button>
               </Link>
             </div>

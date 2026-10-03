@@ -31,7 +31,7 @@ export default function ResetPasswordPage() {
             <Scale className="w-6 h-6 text-white" />
           </div>
           <h1 className="text-2xl font-bold">Reset password</h1>
-          <p className="text-[#9aa0a6] mt-1">
+          <p className="text-muted-foreground mt-1">
             {sent ? "Check your email for the reset link" : "Enter your email to receive a reset link"}
           </p>
         </div>
@@ -42,7 +42,7 @@ export default function ResetPasswordPage() {
               <div className="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center mx-auto">
                 <Mail className="w-8 h-8 text-success" />
               </div>
-              <p className="text-sm text-[#9aa0a6]">
+              <p className="text-sm text-muted-foreground">
                 If an account exists with that email, we&apos;ve sent a password reset link.
               </p>
               <Link href="/login">
@@ -66,7 +66,7 @@ export default function ResetPasswordPage() {
                 Send Reset Link
               </Button>
               <div className="text-center">
-                <Link href="/login" className="text-sm text-[#9aa0a6] hover:text-[#e8eaed] inline-flex items-center gap-1">
+                <Link href="/login" className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
                   <ArrowLeft className="w-3 h-3" />
                   Back to sign in
                 </Link>

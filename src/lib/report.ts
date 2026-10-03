@@ -5,7 +5,22 @@ function wrapText(text: string, maxLength = 95) {
   const lines: string[] = []
   let current = ""
 
-  for (const word of words) {
+  const pushChunkedWord = (word: string) => {
+    // A single over-long token (URL, hash, placeholder run) would overflow
+    // the page width — hard-split it into maxLength chunks.
+    while (word.length > maxLength) {
+      if (current) {
+        lines.push(current)
+        current = ""
+      }
+      lines.push(word.substring(0, maxLength))
+      word = word.substring(maxLength)
+    }
+    return word
+  }
+
+  for (let word of words) {
+    word = pushChunkedWord(word)
     const next = current ? `${current} ${word}` : word
     if (next.length > maxLength) {
       if (current) lines.push(current)
@@ -27,12 +42,23 @@ export async function buildAnalysisReportPdf(params: {
   redFlags: string[]
 }) {
   const pdf = await PDFDocument.create()
-  const page = pdf.addPage([595, 842])
+  let page = pdf.addPage([595, 842])
   const font = await pdf.embedFont(StandardFonts.Helvetica)
   const boldFont = await pdf.embedFont(StandardFonts.HelveticaBold)
   let cursorY = 790
 
+  // B6: content used to silently truncate when cursorY ran out — single page
+  // with `break`. Continue onto fresh pages so long reports are complete.
+  const newPage = () => {
+    page = pdf.addPage([595, 842])
+    cursorY = 790
+  }
+  const ensureSpace = (needed = 40) => {
+    if (cursorY - needed < 60) newPage()
+  }
+
   const drawBlock = (title: string, value: string) => {
+    ensureSpace(60)
     page.drawText(title, {
       x: 40,
       y: cursorY,
@@ -43,6 +69,7 @@ export async function buildAnalysisReportPdf(params: {
     cursorY -= 22
 
     for (const line of wrapText(value || "Not available")) {
+      ensureSpace(20)
       page.drawText(line, {
         x: 40,
         y: cursorY,
@@ -51,7 +78,6 @@ export async function buildAnalysisReportPdf(params: {
         color: rgb(0.2, 0.24, 0.3),
       })
       cursorY -= 14
-      if (cursorY < 60) break
     }
 
     cursorY -= 16
@@ -87,6 +113,7 @@ export async function buildAnalysisReportPdf(params: {
   drawBlock("Executive Summary", params.summary || "Not available")
   drawBlock("Plain Language Explanation", params.plainLanguage || "Not available")
 
+  ensureSpace(60)
   page.drawText("Top Red Flags", {
     x: 40,
     y: cursorY,
@@ -96,8 +123,10 @@ export async function buildAnalysisReportPdf(params: {
   })
   cursorY -= 22
 
-  for (const flag of params.redFlags.slice(0, 8)) {
+  const flags = params.redFlags.length > 0 ? params.redFlags : ["None identified"]
+  for (const flag of flags) {
     for (const line of wrapText(`- ${flag}`, 90)) {
+      ensureSpace(20)
       page.drawText(line, {
         x: 48,
         y: cursorY,
@@ -106,7 +135,6 @@ export async function buildAnalysisReportPdf(params: {
         color: rgb(0.2, 0.24, 0.3),
       })
       cursorY -= 14
-      if (cursorY < 60) break
     }
   }
 

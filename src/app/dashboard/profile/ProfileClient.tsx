@@ -79,6 +79,16 @@ function AvatarSection({ session, onAvatarChange }: { session: ProfileSession; o
   const [uploading, setUploading] = useState(false)
   const [preview, setPreview] = useState<string | null>(session?.user?.image || null)
 
+  // Session loads async — sync preview once it arrives (deferred per repo lint pattern).
+  const sessionImage = session?.user?.image
+  useEffect(() => {
+    if (!sessionImage) return
+    const timeoutId = setTimeout(() => {
+      setPreview(sessionImage)
+    }, 0)
+    return () => clearTimeout(timeoutId)
+  }, [sessionImage])
+
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -106,6 +116,8 @@ function AvatarSection({ session, onAvatarChange }: { session: ProfileSession; o
       setPreview(session?.user?.image || null)
     } finally {
       setUploading(false)
+      // Reset so re-selecting the same file still fires onChange.
+      if (fileRef.current) fileRef.current.value = ""
     }
   }
 
@@ -115,9 +127,9 @@ function AvatarSection({ session, onAvatarChange }: { session: ProfileSession; o
   return (
     <div className="flex items-center gap-5 pb-6 border-b border-border">
       <div className="relative flex-shrink-0">
-        <div className="w-16 h-16 rounded-2xl overflow-hidden shadow-[var(--shadow-md)] border border-border">
+        <div className="relative w-16 h-16 rounded-2xl overflow-hidden shadow-[var(--shadow-md)] border border-border">
           {preview ? (
-            <Image src={preview} alt="Avatar" fill unoptimized sizes="64px" className="w-full h-full object-cover" />
+            <Image src={preview} alt={`${session?.user?.name || session?.user?.email || "User"} avatar`} fill unoptimized sizes="64px" className="w-full h-full object-cover" />
           ) : (
             <div className="w-full h-full bg-primary-btn flex items-center justify-center text-2xl font-bold text-[#FAF8F3]">
               {initials}
@@ -135,7 +147,7 @@ function AvatarSection({ session, onAvatarChange }: { session: ProfileSession; o
             ? <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />
             : <Camera className="w-3.5 h-3.5 text-foreground" />}
         </button>
-        <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
+        <input ref={fileRef} type="file" accept="image/*" className="hidden" aria-label="Upload profile photo" onChange={handleFile} />
       </div>
       <div className="min-w-0">
         <h2 className="font-semibold text-lg truncate text-foreground" style={{ fontFamily: "var(--font-display)" }}>{session?.user?.name || "User"}</h2>
@@ -156,6 +168,21 @@ function PersonalInfoSection({ session }: { session: ProfileSession }) {
     name: session?.user?.name || "",
     email: session?.user?.email || "",
   })
+
+  // Session loads async (null on first render) — populate once it arrives.
+  // Deferred per repo lint pattern. An initialized ref (not the dirty flag)
+  // guards against session object-identity churn clobbering drafts.
+  const sessionName = session?.user?.name || ""
+  const sessionEmail = session?.user?.email || ""
+  const initializedRef = useRef(false)
+  useEffect(() => {
+    if (!session?.user || initializedRef.current) return
+    const timeoutId = setTimeout(() => {
+      setForm({ name: sessionName, email: sessionEmail })
+      initializedRef.current = true
+    }, 0)
+    return () => clearTimeout(timeoutId)
+  }, [session?.user, sessionName, sessionEmail])
 
   const set = (key: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((f) => ({ ...f, [key]: e.target.value }))
@@ -315,7 +342,7 @@ function DangerZone() {
   const [typed, setTyped] = useState("")
 
   const handleDelete = async () => {
-    if (typed !== "DELETE") { showToast('Type "DELETE" to confirm', "error"); return }
+    if (typed.trim() !== "DELETE") { showToast('Type "DELETE" to confirm', "error"); return }
     setDeleting(true)
     try {
       const res = await fetch("/api/profile/delete", { method: "DELETE" })
@@ -324,13 +351,16 @@ function DangerZone() {
       await signOut({ callbackUrl: "/" })
     } catch {
       showToast("Failed to delete account", "error")
+    } finally {
       setDeleting(false)
     }
   }
 
   return (
     <SectionCard>
+      <div id="danger-zone" className="scroll-mt-24">
       <SectionHeader icon={AlertTriangle} title="Danger Zone" subtitle="Irreversible actions — proceed with caution" />
+      </div>
       <div className="space-y-3">
         <div className="flex items-center justify-between p-3 rounded-xl bg-card border border-border shadow-[var(--shadow-sm)]">
           <div>
@@ -340,7 +370,7 @@ function DangerZone() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => signOut({ callbackUrl: "/" })}
+            onClick={() => { void signOut({ callbackUrl: "/" }) }}
             className="flex-shrink-0"
           >
             <LogOut className="w-3.5 h-3.5" />
@@ -423,8 +453,17 @@ export function ProfileClient() {
           <div className="p-3 rounded-xl bg-[rgba(0,0,0,0.02)] border border-border shadow-[var(--shadow-sm)]">
             <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Account status</p>
             <div className="flex items-center gap-1.5 mt-1.5">
-              <span className="w-2 h-2 rounded-full bg-[#16a34a] inline-block shadow-[0_0_8px_rgba(22,163,74,0.4)]" />
-              <p className="text-sm font-bold text-foreground">Active</p>
+              {session?.user?.suspended ? (
+                <>
+                  <span className="w-2 h-2 rounded-full bg-[#dc2626] inline-block shadow-[0_0_8px_rgba(220,38,38,0.4)]" aria-hidden="true" />
+                  <p className="text-sm font-bold text-foreground">Suspended</p>
+                </>
+              ) : (
+                <>
+                  <span className="w-2 h-2 rounded-full bg-[#16a34a] inline-block shadow-[0_0_8px_rgba(22,163,74,0.4)]" aria-hidden="true" />
+                  <p className="text-sm font-bold text-foreground">Active</p>
+                </>
+              )}
             </div>
           </div>
           <div className="p-3 rounded-xl bg-[rgba(0,0,0,0.02)] border border-border shadow-[var(--shadow-sm)]">

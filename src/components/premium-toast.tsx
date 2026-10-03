@@ -81,6 +81,7 @@ function PremiumToastContent({
 
   const c = config[type]
   const Icon = c.icon
+  const assertive = type === "error" || type === "warning"
 
   const dismiss = useCallback(() => {
     setExiting(true)
@@ -163,6 +164,8 @@ function PremiumToastContent({
         className={`toast-wrap ${exiting ? "exiting" : ""}`}
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
+        onFocus={() => setIsPaused(true)}
+        onBlur={() => setIsPaused(false)}
         style={{
           position: "relative",
           overflow: "hidden",
@@ -180,8 +183,8 @@ function PremiumToastContent({
           opacity: visible ? undefined : 0,
           willChange: "transform, opacity",
         }}
-        role="alert"
-        aria-live="polite"
+        role={assertive ? "alert" : "status"}
+        aria-live={assertive ? "assertive" : "polite"}
         aria-atomic="true"
       >
         {/* Body */}
@@ -208,7 +211,7 @@ function PremiumToastContent({
               marginTop: 1,
             }}
           >
-            <Icon style={{ width: 17, height: 17, color: c.iconColor }} />
+            <Icon style={{ width: 17, height: 17, color: c.iconColor }} aria-hidden="true" />
           </div>
 
           {/* Text */}
@@ -299,6 +302,9 @@ export function showToast(
   duration = 3000,
   title?: string
 ) {
+  // Stable id dedupes rapid repeats (e.g. polling loops) instead of
+  // stacking identical toasts over each other.
+  const id = `${type}::${title ?? ""}::${message}`
   toast.custom(
     (t) => (
       <PremiumToastContent
@@ -310,6 +316,7 @@ export function showToast(
       />
     ),
     {
+      id,
       duration,
       position: "top-right",
       // On mobile Sonner overrides position — handled via CSS above

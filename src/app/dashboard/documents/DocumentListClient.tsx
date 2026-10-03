@@ -45,13 +45,15 @@ export function DocumentListClient({ initialDocuments, initialCursor, hasMoreIni
   const [search, setSearch] = useState("")
   const [filter, setFilter] = useState("ALL")
   const [deleting, setDeleting] = useState<string | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState<DocumentItem | null>(null)
 
   const loadMore = async () => {
     if (!cursor || loadingMore) return
     setLoadingMore(true)
     try {
-      const res = await fetch(`/api/documents?limit=12&cursor=${cursor}`)
-      const data = await res.json()
+      const res = await fetch(`/api/documents?limit=12&cursor=${encodeURIComponent(cursor)}`)
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(typeof data.error === "string" ? data.error : "Failed to load")
       const fetched: DocumentItem[] = (data.documents || []).map((d: { id: string; title: string; type: string; fileSize: number | null; status: string; createdAt: string | Date }) => ({
         ...d,
         fileSize: d.fileSize || 0,
@@ -60,8 +62,8 @@ export function DocumentListClient({ initialDocuments, initialCursor, hasMoreIni
       setDocuments((prev) => [...prev, ...fetched])
       setCursor(data.nextCursor ?? null)
       setHasMore(Boolean(data.hasMore))
-    } catch {
-      showToast("Failed to load more documents", "error")
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Failed to load more documents", "error")
     } finally {
       setLoadingMore(false)
     }
@@ -69,18 +71,23 @@ export function DocumentListClient({ initialDocuments, initialCursor, hasMoreIni
 
   const deleteDocument = useCallback(async (id: string) => {
     setDeleting(id)
+    // Snapshot for rollback via functional updates — avoids stale closures
+    // when deletes fire in rapid succession.
+    let snapshot: DocumentItem[] = []
+    setDocuments((list) => {
+      snapshot = list
+      return list.filter((d) => d.id !== id)
+    })
     try {
       const res = await fetch(`/api/documents/${id}`, { method: "DELETE" })
-      if (res.ok) {
-        setDocuments((prev) => prev.filter((d) => d.id !== id))
-        showToast("Document deleted", "success")
-      } else {
-        showToast("Failed to delete document", "error")
-      }
+      if (!res.ok) throw new Error("Delete failed")
+      showToast("Document deleted", "success")
     } catch {
+      setDocuments(snapshot)
       showToast("Failed to delete document", "error")
     } finally {
       setDeleting(null)
+      setConfirmDelete(null)
     }
   }, [])
 
@@ -101,22 +108,30 @@ export function DocumentListClient({ initialDocuments, initialCursor, hasMoreIni
     { value: "OTHER", label: "Other" },
   ]
 
+  const isFiltering = search.trim().length > 0 || filter !== "ALL"
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
         <div>
           <h1 className="text-title" style={{ fontFamily: "var(--font-display)" }}>My Documents</h1>
-          <p className="text-subtitle mt-2">{documents.length} document{documents.length !== 1 ? "s" : ""} uploaded</p>
+          <p className="text-subtitle mt-2">
+            {isFiltering
+              ? `${filtered.length} of ${documents.length} document${documents.length !== 1 ? "s" : ""}`
+              : `${documents.length} document${documents.length !== 1 ? "s" : ""} uploaded`}
+          </p>
         </div>
-        <Link href="/dashboard/upload" className="w-full sm:w-auto"><Button variant="gradient" size="lg" className="w-full sm:w-auto"><Upload className="w-4 h-4" />Upload New<ArrowRight className="w-4 h-4" /></Button></Link>
+        <Link href="/dashboard/upload" className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl font-medium h-12 px-8 text-base bg-[#1A1816] hover:bg-[#2C2A26] text-[#FAF8F3] transition-colors"><Upload className="w-4 h-4" aria-hidden="true" />Upload New<ArrowRight className="w-4 h-4" aria-hidden="true" /></Link>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-          <input type="text" placeholder="Search documents..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full h-12 sm:h-12 pl-12 pr-4 rounded-xl border border-border bg-card text-foreground text-[0.95rem] focus:outline-none focus:ring-2 focus:ring-ring transition-all placeholder:text-muted-foreground shadow-[var(--shadow-sm)]" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" aria-hidden="true" />
+          <label htmlFor="doc-search" className="sr-only">Search documents</label>
+          <input id="doc-search" type="text" placeholder="Search documents..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full h-12 sm:h-12 pl-12 pr-4 rounded-xl border border-border bg-card text-foreground text-[0.95rem] focus:outline-none focus:ring-2 focus:ring-ring transition-all placeholder:text-muted-foreground shadow-[var(--shadow-sm)]" />
         </div>
-        <select value={filter} onChange={(e) => setFilter(e.target.value)} className="h-12 sm:h-12 rounded-xl border border-border bg-card text-foreground px-4 text-[0.95rem] focus:outline-none focus:ring-2 focus:ring-ring transition-all cursor-pointer shadow-[var(--shadow-sm)]">
+        <label htmlFor="doc-filter" className="sr-only">Filter by document type</label>
+        <select id="doc-filter" value={filter} onChange={(e) => setFilter(e.target.value)} className="h-12 sm:h-12 rounded-xl border border-border bg-card text-foreground px-4 text-[0.95rem] focus:outline-none focus:ring-2 focus:ring-ring transition-all cursor-pointer shadow-[var(--shadow-sm)]">
           {filterOptions.map((opt) => (
             <option key={opt.value} value={opt.value} className="bg-card text-foreground">{opt.label}</option>
           ))}
@@ -126,10 +141,14 @@ export function DocumentListClient({ initialDocuments, initialCursor, hasMoreIni
       {filtered.length === 0 ? (
         <div className="glass-subtle rounded-3xl p-14 text-center border border-dashed border-border">
           <div className="w-20 h-20 rounded-3xl bg-[rgba(0,0,0,0.06)] flex items-center justify-center mx-auto mb-6 shadow-[var(--shadow-sm)]">
-            <FileText className="w-10 h-10 text-foreground" />
+            <FileText className="w-10 h-10 text-foreground" aria-hidden="true" />
           </div>
           <h3 className="font-semibold text-xl mb-3 text-foreground" style={{ fontFamily: "var(--font-display)" }}>No documents found</h3>
-          <p className="text-base text-muted-foreground max-w-sm mx-auto leading-relaxed">Upload your first document or change your search filters.</p>
+          <p className="text-base text-muted-foreground max-w-sm mx-auto leading-relaxed">
+            {isFiltering
+              ? "No matches in the loaded documents. Clear the search to load more from the server."
+              : "Upload your first document or change your search filters."}
+          </p>
         </div>
       ) : (
         <>
@@ -157,18 +176,22 @@ export function DocumentListClient({ initialDocuments, initialCursor, hasMoreIni
                 </Badge>
               </div>
               <button
-                onClick={() => deleteDocument(doc.id)}
+                onClick={() => setConfirmDelete(doc)}
                 disabled={deleting === doc.id}
-                className="absolute top-4 right-4 sm:relative sm:top-auto sm:right-auto p-2 sm:p-3 rounded-xl hover:bg-red-50 text-muted-foreground hover:text-red-600 transition-colors cursor-pointer disabled:opacity-50 opacity-100 sm:opacity-0 group-hover:opacity-100"
+                className="absolute top-4 right-4 sm:relative sm:top-auto sm:right-auto p-2 sm:p-3 rounded-xl hover:bg-red-50 text-muted-foreground hover:text-red-600 transition-colors cursor-pointer disabled:opacity-50 opacity-100 sm:opacity-0 group-hover:opacity-100 focus-within:opacity-100 focus-visible:opacity-100"
                 aria-label={`Delete ${doc.title}`}
               >
-                <Trash2 className={`w-4 h-4 sm:w-5 sm:h-5 ${deleting === doc.id ? "animate-spin" : ""}`} />
+                {deleting === doc.id ? (
+                  <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" aria-hidden="true" />
+                ) : (
+                  <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" aria-hidden="true" />
+                )}
               </button>
             </div>
           ))}
         </div>
 
-        {hasMore && (
+        {hasMore && !isFiltering && (
           <div className="flex justify-center pt-2">
             <Button variant="outline" onClick={loadMore} disabled={loadingMore}>
               {loadingMore ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
@@ -177,6 +200,33 @@ export function DocumentListClient({ initialDocuments, initialCursor, hasMoreIni
           </div>
         )}
         </>
+      )}
+
+      {confirmDelete && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/40"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setConfirmDelete(null)
+          }}
+        >
+          <div role="dialog" aria-modal="true" aria-labelledby="delete-title" className="w-full max-w-sm rounded-2xl bg-card border border-border p-6 shadow-xl">
+            <h2 id="delete-title" className="font-semibold text-foreground">Delete document?</h2>
+            <p className="text-sm text-muted-foreground mt-2 truncate">“{confirmDelete.title}” will be permanently removed.</p>
+            <div className="flex gap-3 mt-6">
+              <Button variant="outline" className="flex-1" onClick={() => setConfirmDelete(null)}>
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                className="flex-1"
+                loading={deleting === confirmDelete.id}
+                onClick={() => deleteDocument(confirmDelete.id)}
+              >
+                Delete
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

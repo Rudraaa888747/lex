@@ -2,9 +2,9 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { useState, useCallback } from "react"
+import { useState, useCallback, useEffect } from "react"
 import { cn } from "@/lib/helpers"
-import { LayoutDashboard, FileText, Upload, MessageSquare, GitCompare, MoreHorizontal, History, User, Settings, LogOut } from "lucide-react"
+import { LayoutDashboard, FileText, Upload, MessageSquare, GitCompare, MoreHorizontal, History, User, Settings, LogOut, BarChart3 } from "lucide-react"
 import { signOut } from "next-auth/react"
 
 const primaryItems = [
@@ -16,6 +16,7 @@ const primaryItems = [
 ]
 
 const secondaryItems = [
+  { icon: BarChart3, label: "Analytics", href: "/dashboard/analytics" },
   { icon: History, label: "History", href: "/dashboard/history" },
   { icon: User, label: "Profile", href: "/dashboard/profile" },
   { icon: Settings, label: "Settings", href: "/dashboard/settings" },
@@ -28,14 +29,34 @@ export function BottomNav() {
   const closeMore = useCallback(() => setMoreOpen(false), [])
   const toggleMore = useCallback(() => setMoreOpen((v) => !v), [])
 
+  useEffect(() => {
+    if (!moreOpen) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMoreOpen(false)
+    }
+    document.addEventListener("keydown", onKey)
+    return () => document.removeEventListener("keydown", onKey)
+  }, [moreOpen])
+
+  // Close the sheet on navigation so it never lingers over a new page.
+  // Deferred per repo lint pattern (direct setState in effect is banned).
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setMoreOpen(false)
+    }, 0)
+    return () => clearTimeout(timeoutId)
+  }, [pathname])
+
   if (!pathname.startsWith("/dashboard")) return null
+
+  const moreActive = secondaryItems.some((i) => pathname === i.href || pathname.startsWith(`${i.href}/`))
 
   return (
     <>
       {moreOpen && (
         <>
           <div className="fixed inset-0 z-[210]" onClick={closeMore} aria-hidden="true" />
-          <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-[220] w-[280px] glass-floating rounded-2xl p-2">
+          <div role="menu" aria-label="More options" className="fixed bottom-20 left-1/2 -translate-x-1/2 z-[220] w-[280px] glass-floating rounded-2xl p-2">
             <div className="px-3 py-2 text-xs text-muted-foreground uppercase tracking-wider font-semibold">
               More
             </div>
@@ -60,7 +81,7 @@ export function BottomNav() {
             })}
             <hr className="my-1 border-border" />
             <button
-              onClick={() => { signOut({ callbackUrl: "/" }); closeMore() }}
+              onClick={() => { void signOut({ callbackUrl: "/" }); closeMore() }}
               className="flex w-full items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-danger hover:bg-danger/10 transition-colors cursor-pointer"
             >
               <LogOut className="w-4 h-4" />
@@ -70,7 +91,7 @@ export function BottomNav() {
         </>
       )}
 
-      <nav className="g-nav fixed bottom-0 left-0 right-0 z-[200] lg:hidden pb-[env(safe-area-inset-bottom)]">
+      <nav aria-label="Dashboard" className="g-nav fixed bottom-0 left-0 right-0 z-[200] lg:hidden pb-[env(safe-area-inset-bottom)]">
         <div className="flex items-center justify-around px-1 py-1">
           {primaryItems.map((item) => {
             const isActive =
@@ -100,14 +121,19 @@ export function BottomNav() {
 
           <button
             onClick={toggleMore}
+            aria-expanded={moreOpen}
+            aria-haspopup="menu"
             className={cn(
               "flex flex-col items-center gap-0.5 py-1.5 px-2.5 rounded-xl text-[10px] font-medium transition-all duration-200 min-w-0 flex-1",
-              moreOpen ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+              moreOpen || moreActive ? "text-foreground" : "text-muted-foreground hover:text-foreground"
             )}
             aria-label="More options"
           >
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center">
-              <MoreHorizontal className="w-[18px] h-[18px]" />
+            <div className={cn(
+              "w-9 h-9 rounded-xl flex items-center justify-center",
+              moreActive && !moreOpen ? "bg-[rgba(0,0,0,0.06)]" : ""
+            )}>
+              <MoreHorizontal className="w-[18px] h-[18px]" aria-hidden="true" />
             </div>
             <span className="truncate max-w-[56px] text-center leading-none">More</span>
           </button>

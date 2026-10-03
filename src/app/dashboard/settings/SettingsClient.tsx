@@ -167,21 +167,25 @@ export function SettingsClient({ initialSettings }: { initialSettings: Settings 
   const router = useRouter()
   const [saving, setSaving] = useState(false)
   const [exporting, setExporting] = useState(false)
-  const [hasChanges, setHasChanges] = useState(false)
   const [settings, setSettings] = useState<Settings>(initialSettings)
 
+  // Dirty-check against the server baseline — reverting a toggle back
+  // re-disables Save instead of leaving it stuck on.
+  const hasChanges = JSON.stringify(settings) !== JSON.stringify(initialSettings)
+
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "instant" })
+    const timeoutId = setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: "auto" as ScrollBehavior })
+    }, 0)
+    return () => clearTimeout(timeoutId)
   }, [])
 
   const toggle = (key: keyof Settings) => {
     setSettings((prev) => ({ ...prev, [key]: !prev[key] }))
-    setHasChanges(true)
   }
 
   const handleLanguageChange = (value: string) => {
     setSettings((prev) => ({ ...prev, language: value }))
-    setHasChanges(true)
   }
 
   const handleSave = useCallback(async () => {
@@ -192,9 +196,8 @@ export function SettingsClient({ initialSettings }: { initialSettings: Settings 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(settings),
       })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || "Save failed")
-      setHasChanges(false)
+      const data = await res.json().catch(() => null)
+      if (!res.ok) throw new Error(typeof data?.error === "string" ? data.error : "Save failed")
       showToast("Settings saved successfully", "success")
       router.refresh()
     } catch (err) {
@@ -228,11 +231,11 @@ export function SettingsClient({ initialSettings }: { initialSettings: Settings 
   }
 
   const handleSignOut = () => {
-    signOut({ callbackUrl: "/" })
+    void signOut({ callbackUrl: "/" })
   }
 
   const handleDeleteAccount = () => {
-    showToast("To delete your account, go to Profile → Danger Zone", "info")
+    router.push("/dashboard/profile#danger-zone")
   }
 
   return (

@@ -1,4 +1,4 @@
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next"
 import "./globals.css"
 import { AppWrapper } from "@/components/app-wrapper"
 
@@ -47,6 +47,10 @@ export const metadata: Metadata = {
     title: "Lex | AI Legal Document Analyzer & Contract Risk Detector",
     description: "Understand every contract in seconds. Lex AI simplifies legal jargon, identifies hidden risks, and provides clause-by-clause breakdowns for NDAs, agreements, and policies.",
   },
+}
+
+export const viewport: Viewport = {
+  themeColor: "#1A1816",
 }
 
 

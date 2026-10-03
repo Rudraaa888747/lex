@@ -339,7 +339,7 @@ h6 {
 }
 
 .shimmer {
-  background: linear-gradient(90deg, transparent 25%, var(--color-border) 50%, transparent 75%);
+  background: linear-gradient(90deg, rgba(0,0,0,0.04) 25%, rgba(0,0,0,0.10) 50%, rgba(0,0,0,0.04) 75%);
   background-size: 200% 100%;
   animation: shimmer 2s infinite;
 }
@@ -498,7 +498,7 @@ input:-webkit-autofill:active {
 
 .hero-h1 {
   font-family: var(--font-display);
-  font-size: clamp(3rem, 6vw, 4.5rem);
+  font-size: clamp(2.25rem, 6vw, 4.5rem);
   font-weight: 600;
   letter-spacing: -0.03em;
   line-height: 1.1;
@@ -1061,6 +1061,9 @@ input:-webkit-autofill:active {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 10px;
+  /* room for the popular badge overhang so it never clips */
+  padding-top: 14px;
+  margin-top: -2px;
   align-items: stretch;
 }
 
@@ -1408,7 +1411,20 @@ input:-webkit-autofill:active {
   display: flex;
   gap: 40px;
   align-items: center;
+  width: max-content;
   animation: marquee 25s linear infinite;
+}
+
+/* Pause for readers + reduced motion; the duplicate set is aria-hidden. */
+.trusted-strip:hover .trusted-items-inner,
+.trusted-strip:focus-within .trusted-items-inner {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trusted-items-inner {
+    animation: none;
+  }
 }
 
 .trusted-item {
@@ -1425,7 +1441,8 @@ input:-webkit-autofill:active {
   }
 
   100% {
-    transform: translateX(-50%);
+    /* -50% of total width minus half the inter-set gap so the loop is seamless */
+    transform: translateX(calc(-50% - 20px));
   }
 }
 
@@ -1485,6 +1502,12 @@ input:-webkit-autofill:active {
 @supports (padding: env(safe-area-inset-bottom)) {
   .g-nav {
     padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+@supports (padding: env(safe-area-inset-top)) {
+  .g-nav.fixed {
+    padding-top: env(safe-area-inset-top);
   }
 }
 

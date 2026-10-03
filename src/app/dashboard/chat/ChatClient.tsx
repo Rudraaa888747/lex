@@ -35,16 +35,30 @@ export function ChatClient({ initialDocuments }: { initialDocuments: DocumentIte
   const [selectedDoc, setSelectedDoc] = useState<string | null>(docId)
   const chatContainerRef = useRef<HTMLDivElement>(null)
 
+  // Keep selection in sync when navigating doc-link -> chat without remount.
+  // Deferred to satisfy set-state-in-effect lint (same pattern as admin pages).
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setSelectedDoc(docId)
+    }, 0)
+    return () => clearTimeout(timeoutId)
+  }, [docId])
+
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" })
   }, [])
 
   useEffect(() => {
     if (messages.length > 0 && chatContainerRef.current) {
-      chatContainerRef.current.scrollTo({
-        top: chatContainerRef.current.scrollHeight,
-        behavior: "smooth",
-      })
+      // Don't yank users who scrolled up to read history.
+      const el = chatContainerRef.current
+      const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 120
+      if (nearBottom) {
+        el.scrollTo({
+          top: el.scrollHeight,
+          behavior: "smooth",
+        })
+      }
     }
   }, [messages])
 
@@ -52,7 +66,7 @@ export function ChatClient({ initialDocuments }: { initialDocuments: DocumentIte
     const messageText = text ?? input
     if (!messageText.trim() || sending) return
 
-    const userMessage: Message = { id: Date.now().toString(), role: "user", content: messageText }
+    const userMessage: Message = { id: crypto.randomUUID(), role: "user", content: messageText }
     setMessages((prev) => [...prev, userMessage])
     if (!text) setInput("")
     setSending(true)
@@ -66,12 +80,14 @@ export function ChatClient({ initialDocuments }: { initialDocuments: DocumentIte
 
       if (res.ok) {
         const data = await res.json()
-        setMessages((prev) => [...prev, { id: (Date.now() + 1).toString(), role: "assistant", content: data.response }])
+        setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: "assistant", content: data.response }])
       } else {
-        setMessages((prev) => [...prev, { id: (Date.now() + 1).toString(), role: "assistant", content: "Sorry, I couldn't process that request. Please try again." }])
+        const data = await res.json().catch(() => ({}))
+        const serverError = typeof data.error === "string" ? data.error : null
+        setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: "assistant", content: serverError || "Sorry, I couldn't process that request. Please try again." }])
       }
     } catch {
-      setMessages((prev) => [...prev, { id: (Date.now() + 1).toString(), role: "assistant", content: "An error occurred. Please try again." }])
+      setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: "assistant", content: "An error occurred. Please try again." }])
     } finally {
       setSending(false)
     }
@@ -85,8 +101,8 @@ export function ChatClient({ initialDocuments }: { initialDocuments: DocumentIte
   }
 
   const handleSuggestionClick = (suggestion: string) => {
-    setInput(suggestion)
-    setTimeout(() => handleSend(suggestion), 50)
+    setInput("")
+    handleSend(suggestion)
   }
 
   return (
@@ -132,7 +148,7 @@ export function ChatClient({ initialDocuments }: { initialDocuments: DocumentIte
           <p className="text-xs text-muted-foreground mt-0.5">Ask questions about your legal documents</p>
         </div>
 
-        <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div ref={chatContainerRef} role="log" aria-live="polite" aria-label="Chat messages" className="flex-1 overflow-y-auto p-4 space-y-4">
           {messages.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full text-center space-y-4">
               <div className="w-16 h-16 rounded-2xl bg-primary-btn text-[#FAF8F3] flex items-center justify-center shadow-[var(--shadow-sm)] border border-[rgba(0,0,0,0.1)]">
@@ -162,7 +178,7 @@ export function ChatClient({ initialDocuments }: { initialDocuments: DocumentIte
               }`}>
                 {msg.role === "user" ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
               </div>
-              <div className={`max-w-[80%] p-3 rounded-2xl text-sm leading-relaxed border shadow-[var(--shadow-sm)] ${
+              <div className={`max-w-[80%] p-3 rounded-2xl text-sm leading-relaxed border shadow-[var(--shadow-sm)] whitespace-pre-wrap ${
                 msg.role === "user" ? "bg-foreground text-card border-[rgba(0,0,0,0.1)]" : "bg-card border-border text-foreground"
               }`}>
                 {msg.content}
@@ -193,7 +209,7 @@ export function ChatClient({ initialDocuments }: { initialDocuments: DocumentIte
               disabled={sending}
               aria-label="Chat message"
             />
-            <Button variant="gradient" size="icon" onClick={() => handleSend()} disabled={sending || !input.trim()}>
+            <Button variant="gradient" size="icon" onClick={() => handleSend()} disabled={sending || !input.trim()} aria-label="Send message">
               <Send className="w-4 h-4" />
             </Button>
           </div>

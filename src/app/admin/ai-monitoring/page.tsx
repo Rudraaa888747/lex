@@ -55,11 +55,11 @@ function statusVariant(status: string): "success" | "danger" | "warning" | "seco
 }
 
 function TrendRow({ value }: { value: number | null }) {
-  if (value === null) return null
+  if (value === null) return <p className="text-xs text-muted-foreground/70 mt-2">Insufficient data</p>
   const up = value >= 0
   return (
     <div className={`flex items-center gap-1 text-xs font-medium mt-2 ${up ? "text-emerald-400" : "text-rose-400"}`}>
-      {up ? <ArrowUp className="w-3.5 h-3.5" /> : <ArrowDown className="w-3.5 h-3.5" />}
+      {up ? <ArrowUp className="w-3.5 h-3.5" aria-hidden="true" /> : <ArrowDown className="w-3.5 h-3.5" aria-hidden="true" />}
       {Math.abs(value)}%
     </div>
   )
@@ -165,6 +165,18 @@ export default function AdminAIMonitoringPage() {
         <p className="text-muted-foreground mt-1">Track AI service performance and usage</p>
       </div>
 
+      {!loading && error && !data && (
+        <div className="glass-default rounded-2xl p-10 text-center border border-white/5">
+          <AlertCircle className="w-8 h-8 text-danger mx-auto mb-3" aria-hidden="true" />
+          <p className="text-muted-foreground font-medium mb-4">{error}</p>
+          <button
+            onClick={load}
+            className="inline-flex items-center gap-2 text-sm font-medium rounded-xl border border-border px-4 h-10 hover:bg-[rgba(0,0,0,0.04)] transition-colors"
+          >
+            <RefreshCw className="w-4 h-4" aria-hidden="true" /> Retry
+          </button>
+        </div>
+      )}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {loading
           ? [1, 2, 3, 4].map((i) => (
@@ -199,9 +211,11 @@ export default function AdminAIMonitoringPage() {
 
       <div className="glass-default rounded-2xl p-6 border border-white/5">
         <h2 className="text-lg font-semibold text-foreground mb-4">Daily Request Volume</h2>
-        <div className="h-72">
+        <div className="h-72" role="img" aria-label={`Daily AI request volume over the last ${data?.windowDays ?? 30} days`}>
           {loading ? (
             <div className="h-full w-full rounded-xl bg-muted shimmer" />
+          ) : error ? (
+            <p className="text-sm text-muted-foreground text-center pt-24">Chart unavailable — {error}</p>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data?.dailyRequests ?? []}>
@@ -249,14 +263,14 @@ export default function AdminAIMonitoringPage() {
           </div>
         ) : (
           <div className="divide-y divide-border">
-            {data?.recentRequests.map((req, i) => (
-              <div key={i} className="flex items-center justify-between p-4 hover:bg-[rgba(0,0,0,0.02)] transition-colors">
+            {data?.recentRequests.map((req) => (
+              <div key={`${req.time}-${req.subject}`} className="flex items-center justify-between p-4 hover:bg-[rgba(0,0,0,0.02)] transition-colors">
                 <div className="flex items-center gap-3">
                   <Badge variant={req.type === "Chat" ? "warning" : "default"} size="sm">{req.type}</Badge>
                   <span className="text-sm font-bold text-foreground">{req.subject}</span>
                 </div>
                 <div className="flex items-center gap-4 text-xs text-muted-foreground font-medium">
-                  <span>{req.tokens} tokens</span>
+                  <span>{formatTokens(req.tokens)} tokens</span>
                   <Badge variant={statusVariant(req.status)} size="sm">{req.status}</Badge>
                   <span>{req.time}</span>
                 </div>

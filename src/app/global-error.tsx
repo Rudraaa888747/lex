@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { AlertCircle } from "lucide-react"
 
@@ -10,18 +11,23 @@ export default function GlobalError({
   error: Error & { digest?: string }
   reset: () => void
 }) {
-  console.error("[Global Error]", error)
+  useEffect(() => {
+    console.error("[Global Error]", error)
+  }, [error])
   return (
     <html lang="en">
       <body className="antialiased min-h-screen bg-background text-foreground flex items-center justify-center p-4">
-        <div className="max-w-md w-full glass-default rounded-3xl p-8 text-center border border-border shadow-[var(--shadow-md)]">
+        <div role="alert" className="max-w-md w-full glass-default rounded-3xl p-8 text-center border border-border shadow-[var(--shadow-md)]">
           <div className="w-16 h-16 rounded-2xl bg-red-500/10 flex items-center justify-center mx-auto mb-6">
-            <AlertCircle className="w-8 h-8 text-red-600" />
+            <AlertCircle className="w-8 h-8 text-red-600" aria-hidden="true" />
           </div>
           <h1 className="text-2xl font-bold mb-3" style={{ fontFamily: "var(--font-display)" }}>Something went critically wrong</h1>
           <p className="text-muted-foreground mb-8 text-sm">
             An unexpected system error occurred. Please try again or contact support.
           </p>
+          {error.digest && (
+            <p className="text-xs text-muted-foreground mb-6 font-mono">Error ID: {error.digest}</p>
+          )}
           <div className="flex gap-4 justify-center">
             <Button variant="gradient" onClick={() => reset()} className="px-6">
               Try again

@@ -81,6 +81,7 @@ export function createRateLimiter(limit: number, windowStr: `${number} ${"ms" | 
 
 // Definitions
 export const registerLimiter = createRateLimiter(5, "10 m")
+export const loginLimiter = createRateLimiter(10, "10 m")
 export const chatLimiter = createRateLimiter(20, "1 m")
 export const documentUploadLimiter = createRateLimiter(10, "1 h")
 export const compareLimiter = createRateLimiter(10, "1 h")

@@ -58,15 +58,28 @@ export async function POST(request: NextRequest) {
     const validMimes = ["application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "text/plain", "image/png", "image/jpeg"]
     const validExts = ["pdf", "docx", "txt", "png", "jpg", "jpeg"]
 
-    if (!validExts.includes(ext) || !validMimes.includes(file.type)) {
+    // A5: some browsers send empty/generic MIME for .txt and local files.
+    // Extension is the primary gate; MIME mismatch alone must not reject.
+    if (!validExts.includes(ext)) {
       return Response.json({ error: "Invalid file type. Supported: PDF, DOCX, TXT, PNG, JPG" }, { status: 400 })
+    }
+    if (file.type && !validMimes.includes(file.type) && file.type !== "application/octet-stream") {
+      return Response.json({ error: "Invalid file type. Supported: PDF, DOCX, TXT, PNG, JPG" }, { status: 400 })
+    }
+
+    if (!file.size || file.size === 0) {
+      return Response.json({ error: "File is empty. Please upload a non-empty document." }, { status: 400 })
     }
 
     if (file.size > 30 * 1024 * 1024) {
       return Response.json({ error: "File exceeds 30MB limit to ensure stable processing" }, { status: 400 })
     }
 
-    const sanitizeFilename = file.name.replace(/[^a-zA-Z0-9.\-_]/g, "")
+    // Preserve unicode letters (Hindi/Gujarati filenames) — old regex
+    // stripped everything non-ASCII and could yield an empty name.
+    const rawBase = file.name.split(".").slice(0, -1).join(".") || "document"
+    const safeBase = rawBase.replace(/[^\p{L}\p{N}._-]+/gu, "_").substring(0, 80) || `document-${Date.now()}`
+    const sanitizeFilename = `${safeBase}.${ext}`
     const objectPath = `${session.user.id}/documents/${Date.now()}-${sanitizeFilename}`
     const fileBuffer = Buffer.from(await file.arrayBuffer())
     const initialStatus = IMAGE_EXTENSIONS.has(ext) ? "OCR_PROCESSING" : "PROCESSING"
@@ -115,10 +128,20 @@ export async function POST(request: NextRequest) {
           throw new Error("Document contains no readable text. We tried extracting text and running OCR, but the quality is too poor. Please provide a clearer document.")
         }
 
+        // Fall back to an extension-mapped MIME — after MIME softening,
+        // file.type can be empty and Supabase must not get a blank contentType.
+        const contentTypeMap: Record<string, string> = {
+          pdf: "application/pdf",
+          docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          txt: "text/plain",
+          png: "image/png",
+          jpg: "image/jpeg",
+          jpeg: "image/jpeg",
+        }
         const { error: uploadError } = await supabaseAdmin.storage
           .from(PRIVATE_DOCUMENT_BUCKET)
           .upload(objectPath, fileBuffer, {
-            contentType: file.type,
+            contentType: file.type || contentTypeMap[ext] || "application/octet-stream",
             upsert: false,
           })
 

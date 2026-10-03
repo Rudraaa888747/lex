@@ -9,22 +9,27 @@ export async function GET() {
       return Response.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const [totalUsers, documents, analyses, activeUsers] = await Promise.all([
-      prisma.user.count(),
-      prisma.document.count(),
-      prisma.analysis.count(),
-      prisma.user.count({ where: { role: "USER" } }),
-    ])
+    const [totalUsers, totalDocuments, totalAnalyses, nonSuspendedUsers, failedAnalyses, fileSizeAgg, pendingClaims] =
+      await Promise.all([
+        prisma.user.count(),
+        prisma.document.count(),
+        prisma.analysis.count(),
+        prisma.user.count({ where: { suspended: false } }),
+        prisma.analysis.count({ where: { status: "FAILED" } }),
+        prisma.document.aggregate({ _sum: { fileSize: true } }),
+        prisma.auditLog.count({ where: { action: "payment.claim" } }),
+      ])
 
     return Response.json({
       totalUsers,
-      activeUsers,
-      totalDocuments: documents,
-      totalAnalyses: analyses,
-      revenue: analyses * 0.01,
-      aiUsage: analyses,
-      storageUsed: Math.round((documents * 0.5) * 10) / 10,
-      errorRate: 0.5,
+      activeUsers: nonSuspendedUsers,
+      totalDocuments,
+      totalAnalyses,
+      failedAnalyses,
+      errorRate: totalAnalyses === 0 ? 0 : Math.round((failedAnalyses / totalAnalyses) * 1000) / 10,
+      paymentClaims: pendingClaims,
+      aiUsage: totalAnalyses,
+      storageUsedGb: Math.round(((fileSizeAgg._sum.fileSize ?? 0) / 1024 ** 3) * 10) / 10,
     }, {
       headers: {
         "Cache-Control": "s-maxage=60, stale-while-revalidate=300"

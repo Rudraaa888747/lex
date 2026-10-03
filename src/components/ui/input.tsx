@@ -8,8 +8,10 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> 
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, type, label, error, id, ...props }, ref) => {
-    const inputId = id || (label ? label.toLowerCase().replace(/\s+/g, "-") : undefined)
-    const errorId = error && inputId ? `${inputId}-error` : undefined
+    // Stable unique id — label-derived ids collide with duplicate labels.
+    const autoId = React.useId()
+    const inputId = id || autoId
+    const errorId = error ? `${inputId}-error` : undefined
     return (
       <div className="w-full">
         {label && (
@@ -18,6 +20,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           </label>
         )}
         <input
+          {...props}
           id={inputId}
           type={type}
           className={cn(
@@ -26,9 +29,8 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             className
           )}
           ref={ref}
-          aria-invalid={!!error}
+          aria-invalid={error ? true : undefined}
           aria-describedby={errorId}
-          {...props}
         />
         {error && <p id={errorId} className="mt-1 text-sm text-danger" role="alert">{error}</p>}
       </div>

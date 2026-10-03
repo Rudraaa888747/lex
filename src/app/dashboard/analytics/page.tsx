@@ -11,6 +11,7 @@ import {
   Cell,
   ResponsiveContainer,
   Tooltip,
+  Legend,
   XAxis,
   YAxis,
   LineChart,
@@ -25,6 +26,7 @@ type AnalyticsResponse = {
     avgFileSizeMb: number
   }
   riskDistribution: Array<{ name: string; value: number }>
+  riskDistributionNote?: string
   monthlyActivity: Array<{ name: string; uploads: number }>
   analysisTrends: Array<{ name: string; analyses: number }>
   userInsights: {
@@ -59,26 +61,52 @@ function StatCard({
 export default function AnalyticsPage() {
   const [data, setData] = useState<AnalyticsResponse | null>(null)
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
+
+  const load = async () => {
+    setLoading(true)
+    setLoadError(null)
+    try {
+      const response = await fetch("/api/dashboard/analytics")
+      const payload = await response.json().catch(() => null)
+      if (!response.ok) {
+        if (response.status === 401) {
+          window.location.href = "/login"
+          return
+        }
+        throw new Error(typeof payload?.error === "string" ? payload.error : "Failed to load analytics")
+      }
+      setData(payload)
+    } catch (err) {
+      setData(null)
+      setLoadError(err instanceof Error ? err.message : "Failed to load analytics")
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "auto" })
-
-    fetch("/api/dashboard/analytics")
-      .then((response) => response.json())
-      .then((payload) => setData(payload))
-      .catch(() => setData(null))
-      .finally(() => setLoading(false))
+    const timeoutId = setTimeout(() => {
+      void load()
+    }, 0)
+    return () => clearTimeout(timeoutId)
   }, [])
 
   if (loading) {
-    return <div className="h-80 rounded-3xl bg-white/5 animate-pulse" />
+    return <div className="h-80 rounded-3xl bg-white/5 animate-pulse" role="status" aria-label="Loading analytics" />
   }
 
   if (!data) {
     return (
       <div className="glass-default rounded-3xl p-10 text-center border border-white/5">
         <h1 className="text-2xl font-bold text-foreground">Analytics unavailable</h1>
-        <p className="text-muted-foreground mt-2">We could not load your analytics right now.</p>
+        <p className="text-muted-foreground mt-2">{loadError || "We could not load your analytics right now."}</p>
+        <button
+          onClick={() => void load()}
+          className="mt-6 inline-flex items-center justify-center rounded-xl border border-border px-6 h-11 font-medium hover:bg-[rgba(0,0,0,0.04)] transition-colors"
+        >
+          Retry
+        </button>
       </div>
     )
   }
@@ -93,8 +121,8 @@ export default function AnalyticsPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="Documents" value={data.totals.documents} icon={BarChart3} />
         <StatCard label="Analyses" value={data.totals.analyses} icon={TrendingUp} />
-        <StatCard label="Avg Contract Score" value={data.totals.avgScore} icon={Shield} />
-        <StatCard label="Avg File Size (MB)" value={data.totals.avgFileSizeMb} icon={PieChartIcon} />
+        <StatCard label="Avg Contract Score (6 mo)" value={`${Number(data.totals.avgScore).toFixed(1)} / 10`} icon={Shield} />
+        <StatCard label="Avg File Size (MB)" value={Number(data.totals.avgFileSizeMb).toFixed(2)} icon={PieChartIcon} />
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
@@ -115,18 +143,34 @@ export default function AnalyticsPage() {
 
         <div className="glass-default rounded-3xl p-6 border border-white/5">
           <h2 className="text-lg font-semibold text-foreground mb-4">Risk Distribution</h2>
-          <div className="h-72">
+          {data.riskDistributionNote && (
+            <p className="text-xs text-muted-foreground mb-3">{data.riskDistributionNote}</p>
+          )}
+          <div className="h-72" role="img" aria-label={`Risk distribution: ${data.riskDistribution.map((d) => `${d.name} ${d.value}`).join(", ")}`}>
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie data={data.riskDistribution} dataKey="value" nameKey="name" innerRadius={55} outerRadius={90} paddingAngle={4}>
-                  {data.riskDistribution.map((entry, index) => (
-                    <Cell key={entry.name} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                  {data.riskDistribution.map((entry, pieIndex) => (
+                    <Cell key={entry.name} fill={PIE_COLORS[pieIndex % PIE_COLORS.length]} />
                   ))}
                 </Pie>
                 <Tooltip />
+                <Legend />
               </PieChart>
             </ResponsiveContainer>
           </div>
+          <ul className="mt-4 space-y-1.5 text-sm text-muted-foreground">
+            {data.riskDistribution.map((entry, i) => (
+              <li key={entry.name} className="flex items-center gap-2">
+                <span
+                  className="w-3 h-3 rounded-sm shrink-0"
+                  style={{ backgroundColor: PIE_COLORS[i % PIE_COLORS.length] }}
+                  aria-hidden="true"
+                />
+                {entry.name}: <strong className="text-foreground">{entry.value}</strong>
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
 

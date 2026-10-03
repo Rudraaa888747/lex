@@ -97,8 +97,8 @@ export default function LandingPage() {
 
       {/* ── HERO ─────────────────────────────────────────────────────────── */}
       <section className="hero">
-        <div className="hero-orb hero-orb-1" />
-        <div className="hero-orb hero-orb-2" />
+        <div className="hero-orb hero-orb-1" aria-hidden="true" />
+        <div className="hero-orb hero-orb-2" aria-hidden="true" />
         <div className="hero-inner">
 
           <div>
@@ -214,7 +214,7 @@ export default function LandingPage() {
       {/* ── TRUSTED STRIP ────────────────────────────────────────────── */}
       <section className="trusted-strip border-y border-[var(--outline-var)] bg-[var(--color-card)]">
         <div className="trusted-label">Trusted By</div>
-        <div className="trusted-divider" />
+        <div className="trusted-divider" aria-hidden="true" />
         <div className="trusted-items">
           <div className="trusted-items-inner">
             <div className="trusted-item">Law Firms</div>
@@ -223,13 +223,13 @@ export default function LandingPage() {
             <div className="trusted-item">HR Teams</div>
             <div className="trusted-item">Real Estate Agents</div>
             <div className="trusted-item">Enterprise Legal Depts</div>
-            {/* Duplicate for marquee effect */}
-            <div className="trusted-item">Law Firms</div>
-            <div className="trusted-item">Freelancers</div>
-            <div className="trusted-item">Startups</div>
-            <div className="trusted-item">HR Teams</div>
-            <div className="trusted-item">Real Estate Agents</div>
-            <div className="trusted-item">Enterprise Legal Depts</div>
+            {/* Duplicate for marquee effect — hidden from assistive tech */}
+            <div className="trusted-item" aria-hidden="true">Law Firms</div>
+            <div className="trusted-item" aria-hidden="true">Freelancers</div>
+            <div className="trusted-item" aria-hidden="true">Startups</div>
+            <div className="trusted-item" aria-hidden="true">HR Teams</div>
+            <div className="trusted-item" aria-hidden="true">Real Estate Agents</div>
+            <div className="trusted-item" aria-hidden="true">Enterprise Legal Depts</div>
           </div>
         </div>
       </section>
@@ -239,7 +239,7 @@ export default function LandingPage() {
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-display font-bold mb-4 tracking-tight">Analyzes what you sign most.</h2>
           <p className="text-[var(--on-bg-muted)] max-w-xl mx-auto text-lg">We support the most common document types across real estate, HR, and business operations.</p>
-          <p className="text-[var(--on-bg-muted)] max-w-xl mx-auto text-lg">Click on the name to open infomation.</p>
+          <p className="text-[var(--on-bg-muted)] max-w-xl mx-auto text-lg">Click a card to view analysis details.</p>
         </div>
         <div className="doc-grid">
           {documentTypes.map((doc, i) => (

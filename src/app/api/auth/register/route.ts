@@ -42,6 +42,15 @@ export async function POST(request: NextRequest) {
       return Response.json({ error: "Password too long" }, { status: 400 })
     }
 
+    // Same policy the register form enforces client-side — direct API
+    // calls must not bypass it (length-only check was weaker).
+    if (!/[0-9!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?~`]/.test(password)) {
+      return Response.json(
+        { error: "Password must include at least one number or symbol" },
+        { status: 400 }
+      )
+    }
+
     const existing = await prisma.user.findUnique({ where: { email: sanitizedEmail } })
     if (existing) {
       return Response.json({ error: "Email already registered" }, { status: 400 })

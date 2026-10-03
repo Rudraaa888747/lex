@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Scale, Eye, EyeOff, ArrowRight, Loader2, Check } from "lucide-react"
+import { Scale, Eye, EyeOff, ArrowRight, Loader2 } from "lucide-react"
 import { showToast } from "@/components/premium-toast"
 import { motion } from "framer-motion"
 import { BackToWebsite } from "@/components/ui/back-to-website"
@@ -15,20 +15,29 @@ export default function LoginPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
-  const [rememberMe, setRememberMe] = useState(false)
   const [form, setForm] = useState({ email: "", password: "" })
 
   useEffect(() => {
     router.prefetch("/dashboard")
   }, [router])
 
+  // Prefill email after registration (?email=...); deferred per repo lint pattern.
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      const email = new URLSearchParams(window.location.search).get("email")
+      if (email) setForm((f) => ({ ...f, email }))
+    }, 0)
+    return () => clearTimeout(timeoutId)
+  }, [])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
 
     try {
+      // H6: match register normalization so "User@X.com" logs in as "user@x.com"
       const result = await signIn("credentials", {
-        email: form.email,
+        email: form.email.trim().toLowerCase(),
         password: form.password,
         redirect: false,
       })
@@ -135,17 +144,7 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between text-sm pt-2 pb-2">
-                <button
-                  type="button"
-                  onClick={() => setRememberMe(!rememberMe)}
-                  className="flex items-center gap-2.5 cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
-                >
-                  <div className={`w-5 h-5 rounded flex items-center justify-center border transition-all duration-200 ${rememberMe ? 'bg-primary-btn border-primary-btn' : 'bg-[rgba(255,255,255,0.5)] border-border/80 group-hover:border-[rgba(0,0,0,0.3)]'}`}>
-                    <Check className={`w-3.5 h-3.5 text-white transition-transform duration-200 ${rememberMe ? 'scale-100 opacity-100' : 'scale-50 opacity-0'}`} />
-                  </div>
-                  <span className="text-muted-foreground font-medium group-hover:text-foreground transition-colors">Remember me</span>
-                </button>
+              <div className="flex items-center justify-end text-sm pt-2 pb-2">
                 <Link href="/reset-password" className="text-foreground font-semibold hover:text-foreground/80 transition-colors">
                   Forgot password?
                 </Link>

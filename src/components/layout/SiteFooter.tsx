@@ -7,9 +7,9 @@ const NAV = [
   {
     heading: "Product",
     links: [
-      { label: "Features", href: "/#features" },
+      { label: "Features", href: "/features" },
+      { label: "How it works", href: "/how-it-works" },
       { label: "Pricing", href: "/pricing" },
-      { label: "FAQ", href: "/faq" },
     ],
   },
   {
@@ -25,7 +25,7 @@ const NAV = [
     links: [
       { label: "FAQ", href: "/faq" },
       { label: "Support", href: "/support" },
-      { label: "Press Kit", href: "/press" },
+      { label: "Contact sales", href: "/contact-sales" },
     ],
   },
 ]

@@ -66,9 +66,12 @@ export async function POST(
       where: {
         id,
         userId: session.user.id,
-        status: { in: ["READY_FOR_ANALYSIS", "READY_FOR_ANALYSIS_LOW_CONFIDENCE"] },
+        // B8: FAILED docs must be retryable — the detail page Retry button
+        // re-POSTs here, but the old allow-list excluded FAILED so every
+        // retry died with 409 "not ready". Reset errorMessage on reclaim.
+        status: { in: ["READY_FOR_ANALYSIS", "READY_FOR_ANALYSIS_LOW_CONFIDENCE", "FAILED"] },
       },
-      data: { status: "ANALYZING" },
+      data: { status: "ANALYZING", errorMessage: null },
     })
 
     if (claim.count !== 1) {

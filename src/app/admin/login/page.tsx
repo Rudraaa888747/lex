@@ -19,7 +19,7 @@ export default function AdminLoginPage() {
 
     try {
       const result = await signIn("credentials", {
-        email: form.email,
+        email: form.email.trim().toLowerCase(),
         password: form.password,
         redirect: false,
       })

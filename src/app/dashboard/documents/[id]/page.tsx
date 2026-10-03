@@ -52,13 +52,17 @@ export default function DocumentDetailsPage() {
   const [doc, setDoc] = useState<DocumentData | null>(null)
   const [analysis, setAnalysis] = useState<AnalysisData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [analyzing, setAnalyzing] = useState(false)
   const [downloadingReport, setDownloadingReport] = useState(false)
   const [showContent, setShowContent] = useState(false)
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
 
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "auto" })
+    const timeoutId = setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: "auto" as ScrollBehavior })
+    }, 0)
+    return () => clearTimeout(timeoutId)
   }, [])
 
   useEffect(() => {
@@ -75,8 +79,14 @@ export default function DocumentDetailsPage() {
     try {
       const res = await fetch(`/api/analyze/${params.id}`, { method: "POST" })
       const data = await res.json()
-      
+
       if (!res.ok) {
+        // 409 "already in progress" is not a failure — another tab/request
+        // claimed it. Stay in analyzing so polling picks up the result.
+        // Any other 409 (e.g. still processing) is a real error to surface.
+        if (res.status === 409 && /progress|already/i.test(data.error || "")) {
+          return
+        }
         throw new Error(data.error || "Analysis failed")
       }
       
@@ -95,57 +105,53 @@ export default function DocumentDetailsPage() {
     }
   }, [params.id])
 
-  useEffect(() => {
-    if (!doc || !(doc.status === "PROCESSING" || doc.status === "OCR_PROCESSING")) return
-    const interval = setInterval(async () => {
-      try {
-        const res = await fetch(`/api/documents/${params.id}`)
-        if (res.ok) {
-          const data = await res.json()
-          if (data.document) {
-            setDoc(data.document)
-            setAnalysis(data.analysis)
-            if (data.document.status !== "PROCESSING" && data.document.status !== "OCR_PROCESSING") {
-              clearInterval(interval)
-              if (data.document.status === "FAILED") {
-                showToast(getUserFriendlyErrorMessage(data.document.errorMessage), "error")
-              } else if (data.document.status === "READY_FOR_ANALYSIS") {
-                showToast("Document ready for analysis", "success")
-              }
-            }
-          }
-        }
-      } catch { /* silent */ }
-    }, 3000)
-    return () => clearInterval(interval)
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- depend on doc.status only, not the whole doc (it updates every poll tick)
-  }, [params.id, doc?.status])
+  // Single unified poller for every in-flight state (upload extraction,
+  // OCR, analysis). One interval, in-flight guard, COMPLETED required —
+  // a stale analysis object alone must not resolve a fresh run.
+  const shouldPoll =
+    analyzing ||
+    (doc != null &&
+      (doc.status === "PROCESSING" ||
+        doc.status === "OCR_PROCESSING" ||
+        doc.status === "ANALYZING"))
 
   useEffect(() => {
-    if (!analyzing) return
+    if (!shouldPoll) return
+    let cancelled = false
+    let inFlight = false
     const interval = setInterval(async () => {
+      if (inFlight || cancelled) return
+      inFlight = true
       try {
         const res = await fetch(`/api/documents/${params.id}`)
-        if (res.ok) {
-          const data = await res.json()
-          if (data.document?.status === "COMPLETED" || 
-              data.analysis) {
-            setDoc(data.document)
-            setAnalysis(data.analysis)
-            setAnalyzing(false)
-            clearInterval(interval)
-            showToast("Analysis complete", "success")
-          } else if (data.document?.status === "FAILED") {
-            setDoc(data.document)
-            setAnalyzing(false)
-            clearInterval(interval)
-            showToast(getUserFriendlyErrorMessage(data.document?.errorMessage), "error")
-          }
+        if (!res.ok || cancelled) return
+        const data = await res.json()
+        if (cancelled || !data.document) return
+        setDoc(data.document)
+        if (data.analysis) setAnalysis(data.analysis)
+        const status = data.document.status
+        if (status === "COMPLETED") {
+          setAnalyzing(false)
+          showToast("Analysis complete", "success")
+        } else if (status === "FAILED") {
+          setAnalyzing(false)
+          showToast(getUserFriendlyErrorMessage(data.document.errorMessage), "error")
+        } else if (status === "READY_FOR_ANALYSIS" && !analyzing) {
+          showToast("Document ready for analysis", "success")
+          setAnalyzing(false)
         }
-      } catch { /* silent */ }
+      } catch {
+        // silent — next tick retries
+      } finally {
+        inFlight = false
+      }
     }, 3000)
-    return () => clearInterval(interval)
-  }, [analyzing, params.id])
+    return () => {
+      cancelled = true
+      clearInterval(interval)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- poll on status/analyzing transitions only
+  }, [params.id, shouldPoll])
 
   const handleDownloadReport = useCallback(async () => {
     if (!doc) return
@@ -167,7 +173,10 @@ export default function DocumentDetailsPage() {
       const anchor = document.createElement("a")
       anchor.href = url
       anchor.download = `${doc.title.replace(/[^a-zA-Z0-9-_]/g, "_")}-report.pdf`
+      // appendChild required for Safari download to trigger
+      document.body.appendChild(anchor)
       anchor.click()
+      anchor.remove()
       URL.revokeObjectURL(url)
     } catch (error) {
       showToast(getUserFriendlyErrorMessage(error instanceof Error ? error.message : null), "error")
@@ -181,15 +190,17 @@ export default function DocumentDetailsPage() {
     async function load() {
       try {
         const res = await fetch(`/api/documents/${params.id}`)
-        if (res.ok) {
-          const data = await res.json()
-          if (!cancelled) {
-            setDoc(data.document)
-            setAnalysis(data.analysis)
-          }
+        if (!res.ok) {
+          const payload = await res.json().catch(() => ({}))
+          throw new Error(typeof payload.error === "string" ? payload.error : "Failed to load document")
         }
-      } catch {
-        // silently fail
+        const data = await res.json()
+        if (!cancelled) {
+          setDoc(data.document)
+          setAnalysis(data.analysis)
+        }
+      } catch (err) {
+        if (!cancelled) setLoadError(err instanceof Error ? err.message : "Failed to load document")
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -211,9 +222,19 @@ export default function DocumentDetailsPage() {
   if (!doc) {
     return (
       <div className="text-center py-20">
-        <FileText className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
-        <h2 className="text-lg font-semibold text-foreground">Document not found</h2>
-        <Link href="/dashboard/documents" className="text-foreground hover:underline text-sm mt-2 inline-block font-medium">Back to documents</Link>
+        <FileText className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" aria-hidden="true" />
+        <h2 className="text-lg font-semibold text-foreground">
+          {loadError ? "Could not load document" : "Document not found"}
+        </h2>
+        {loadError && <p className="text-sm text-muted-foreground mt-2">{getUserFriendlyErrorMessage(loadError)}</p>}
+        <div className="mt-4 flex items-center justify-center gap-3">
+          {loadError && (
+            <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
+              Retry
+            </Button>
+          )}
+          <Link href="/dashboard/documents" className="text-foreground hover:underline text-sm font-medium">Back to documents</Link>
+        </div>
       </div>
     )
   }
@@ -267,14 +288,14 @@ export default function DocumentDetailsPage() {
         <div className="flex gap-2">
           {analysis && (
             <>
-              <Link href={`/dashboard/chat?doc=${doc.id}`}>
-                <Button variant="outline" size="sm" className="px-2 sm:px-4">
-                  <MessageSquare className="w-4 h-4 sm:mr-2" />
+              <Link href={`/dashboard/chat?doc=${doc.id}`} aria-label="Chat about this document">
+                <Button variant="outline" size="sm" className="px-2 sm:px-4 min-h-[44px] min-w-[44px]">
+                  <MessageSquare className="w-4 h-4 sm:mr-2" aria-hidden="true" />
                   <span className="hidden sm:inline">Chat</span>
                 </Button>
               </Link>
-              <Button variant="gradient" size="sm" className="px-2 sm:px-4" onClick={handleDownloadReport} loading={downloadingReport}>
-                <Download className="w-4 h-4 sm:mr-2" />
+              <Button variant="gradient" size="sm" className="px-2 sm:px-4 min-h-[44px] min-w-[44px]" onClick={handleDownloadReport} loading={downloadingReport} aria-label="Download report">
+                <Download className="w-4 h-4 sm:mr-2" aria-hidden="true" />
                 <span className="hidden sm:inline">Report</span>
               </Button>
             </>
@@ -287,6 +308,7 @@ export default function DocumentDetailsPage() {
         <div className="glass-subtle rounded-2xl sm:rounded-3xl p-4 sm:p-7 border border-border bg-[rgba(0,0,0,0.02)]">
           <button
             onClick={() => setShowContent(!showContent)}
+            aria-expanded={showContent}
             className="flex items-center justify-between w-full text-left group cursor-pointer"
           >
             <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
@@ -774,6 +796,9 @@ export default function DocumentDetailsPage() {
 
       {showUpgradeModal && (
         <div 
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="upgrade-title"
           className="fixed inset-0 z-50 flex items-center justify-center px-4"
           style={{
             background: "rgba(15,14,13,0.75)",
@@ -796,7 +821,7 @@ export default function DocumentDetailsPage() {
             boxShadow: "0 32px 80px -12px rgba(0,0,0,0.25), 0 8px 32px -8px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,1)",
             animation: "modalIn 0.35s cubic-bezier(0.16,1,0.3,1) forwards",
           }}>
-            <h2 className="text-xl font-bold text-foreground" style={{ fontFamily: "var(--font-display)" }}>Premium Feature</h2>
+            <h2 id="upgrade-title" className="text-xl font-bold text-foreground" style={{ fontFamily: "var(--font-display)" }}>Premium Feature</h2>
             <p className="text-muted-foreground mt-3">
               Report Download is available for Premium members only.
             </p>

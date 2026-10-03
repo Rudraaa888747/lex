@@ -63,19 +63,28 @@ export default function UploadPage() {
   }, [])
 
   const handleFiles = useCallback((newFiles: File[]) => {
-    const validFiles = newFiles.filter((f) => {
+    const validFiles: File[] = []
+    let rejectedType = 0
+    let rejectedSize = 0
+    for (const f of newFiles) {
       const ext = f.name.split(".").pop()?.toLowerCase()
-      return ext && ALLOWED_EXTENSIONS.includes(ext)
-    })
-    if (validFiles.length === 0) {
-      showToast("Unsupported file type. Please upload PDF, DOCX, TXT, or images.", "error")
-      return
+      if (!ext || !ALLOWED_EXTENSIONS.includes(ext)) {
+        rejectedType++
+        continue
+      }
+      if (f.size > MAX_FILE_SIZE) {
+        rejectedSize++
+        continue
+      }
+      validFiles.push(f)
     }
-    const oversized = validFiles.filter((f) => f.size > MAX_FILE_SIZE)
-    if (oversized.length > 0) {
-      showToast(`${oversized[0].name} exceeds 50MB limit`, "error")
-      return
+    if (rejectedType > 0) {
+      showToast(`${rejectedType} file${rejectedType > 1 ? "s" : ""} skipped: unsupported type. Use PDF, DOCX, TXT, or images.`, "error")
     }
+    if (rejectedSize > 0) {
+      showToast(`${rejectedSize} file${rejectedSize > 1 ? "s" : ""} skipped: exceeds 30MB limit.`, "error")
+    }
+    if (validFiles.length === 0) return
     setFiles((prev) => [...prev, ...validFiles])
   }, [])
 
@@ -99,36 +108,52 @@ export default function UploadPage() {
     setUploading(true)
     setProgress(0)
 
+    // B2: UI queues multiple files but only files[0] was ever uploaded —
+    // the rest were silently dropped. Upload sequentially with progress.
     try {
-      const formData = new FormData()
-      formData.append("file", files[0])
-      formData.append("language", language)
+      const uploadedIds: string[] = []
+      for (let i = 0; i < files.length; i++) {
+        const formData = new FormData()
+        formData.append("file", files[i])
+        formData.append("language", language)
 
-      const progressInterval = setInterval(() => {
-        setProgress((prev) => Math.min(prev + 10, 90))
-      }, 500)
+        setProgress(Math.round((i / files.length) * 90))
 
-      const res = await fetch("/api/documents/upload", {
-        method: "POST",
-        body: formData,
-      })
+        const res = await fetch("/api/documents/upload", {
+          method: "POST",
+          body: formData,
+        })
 
-      clearInterval(progressInterval)
-      setProgress(100)
-
-      const data = await res.json()
-      if (res.ok) {
-        showToast("Document uploaded successfully!", "success")
-        setTimeout(() => {
-          router.push(`/dashboard/documents/${data.document.id}`)
-        }, 500)
-      } else if (res.status === 403 && data.error?.includes("limit")) {
-        setShowLimitModal(true)
-        setProgress(0)
-      } else {
-        showToast(data.error || "Upload failed", "error")
-        setProgress(0)
+        const data = await res.json().catch(() => ({}))
+        if (res.ok) {
+          uploadedIds.push(data.document.id)
+        } else if (res.status === 403 && typeof data.error === "string" && data.error.includes("limit")) {
+          setShowLimitModal(true)
+          setProgress(0)
+          return
+        } else {
+          showToast(data.error || `Upload failed for ${files[i].name}`, "error")
+          setProgress(0)
+          return
+        }
       }
+
+      setProgress(100)
+      showToast(
+        uploadedIds.length > 1
+          ? `${uploadedIds.length} documents uploaded successfully!`
+          : "Document uploaded successfully!",
+        "success"
+      )
+      setFiles([])
+      const target = uploadedIds.length === 1
+        ? `/dashboard/documents/${uploadedIds[0]}`
+        : "/dashboard/documents"
+      // Short delay so the success toast is visible before navigating.
+      setTimeout(() => {
+        router.push(target)
+        router.refresh()
+      }, 500)
     } catch {
       showToast("Upload failed. Please try again.", "error")
       setProgress(0)
@@ -208,7 +233,7 @@ export default function UploadPage() {
             ))}
           </div>
           <p className="text-[11px] text-muted-foreground/80 pt-2">
-            Max file size: 50MB. Files are encrypted and processed securely.
+            Max file size: 30MB. Files are encrypted and processed securely.
           </p>
         </div>
       </div>
@@ -224,10 +249,10 @@ export default function UploadPage() {
                 <p className="text-xs text-muted-foreground mt-1">{(file.size / 1024 / 1024).toFixed(2)} MB · {getFileType(file.name)}</p>
               </div>
               {uploading ? (
-                <Loader2 className="w-5 h-5 animate-spin text-foreground" />
+                <Loader2 className="w-5 h-5 animate-spin text-foreground" aria-hidden="true" />
               ) : (
-                <button onClick={() => removeFile(i)} className="p-2 hover:bg-red-50 rounded-xl text-muted-foreground hover:text-red-600 transition-colors cursor-pointer" aria-label="Remove file">
-                  <X className="w-5 h-5" />
+                <button onClick={() => removeFile(i)} className="p-2 hover:bg-red-50 rounded-xl text-muted-foreground hover:text-red-600 transition-colors cursor-pointer" aria-label={`Remove ${file.name}`}>
+                  <X className="w-5 h-5" aria-hidden="true" />
                 </button>
               )}
             </div>

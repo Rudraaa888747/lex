@@ -1,14 +1,14 @@
 import Link from "next/link"
-import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
-  FileText, Upload, AlertTriangle, Clock, ArrowRight,
+  FileText, Upload, Clock, ArrowRight,
   FileSearch, Sparkles, Scale, ChevronRight, TrendingUp,
   BarChart3, Zap, Shield
 } from "lucide-react"
 import { AnimatedNumber } from "@/components/animated-number"
 import { getAuth } from "@/lib/auth-cached"
 import { prisma } from "@/lib/database"
+import { PLAN_LIMITS } from "@/lib/subscription"
 import { redirect } from "next/navigation"
 
 /* ─────────────────────────── status badge ──────────────────── */
@@ -33,7 +33,7 @@ export default async function DashboardPage() {
   const session = await getAuth()
   if (!session?.user?.id) redirect("/login")
 
-  const [documents, totalAnalyses] = await prisma.$transaction([
+  const [documents, totalAnalyses, totalDocuments, monthDocuments] = await prisma.$transaction([
     prisma.document.findMany({
       where: { userId: session.user.id },
       orderBy: { createdAt: "desc" },
@@ -53,12 +53,20 @@ export default async function DashboardPage() {
     prisma.analysis.count({
       where: { userId: session.user.id },
     }),
+    prisma.document.count({
+      where: { userId: session.user.id },
+    }),
+    prisma.document.count({
+      where: {
+        userId: session.user.id,
+        createdAt: { gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) },
+      },
+    }),
   ])
 
   const stats = {
-    totalDocuments: documents.length,
-    totalAnalyses: totalAnalyses,
-    totalRisks: 0, // Fallback as in original client code since no db field returned it
+    totalDocuments,
+    totalAnalyses,
   }
 
   const quickStats = [
@@ -81,18 +89,9 @@ export default async function DashboardPage() {
       glow: "shadow-blue-500/10",
     },
     {
-      icon: AlertTriangle,
-      label: "Risks Detected",
-      value: stats.totalRisks,
-      color: "text-amber-400",
-      bg: "bg-amber-500/10",
-      border: "border-amber-500/20",
-      glow: "shadow-amber-500/10",
-    },
-    {
       icon: Clock,
       label: "This Month",
-      value: documents.length,
+      value: monthDocuments,
       color: "text-emerald-400",
       bg: "bg-emerald-500/10",
       border: "border-emerald-500/20",
@@ -100,9 +99,10 @@ export default async function DashboardPage() {
     },
   ]
 
-  const usedDocs = documents.length
-  const limitDocs = 3
-  const usagePct = Math.min((usedDocs / limitDocs) * 100, 100)
+  const usedDocs = totalDocuments
+  const userPlan = session.user.plan || "FREE"
+  const limitDocs = PLAN_LIMITS[userPlan] ?? PLAN_LIMITS.FREE
+  const usagePct = limitDocs === Infinity ? 0 : Math.min((usedDocs / limitDocs) * 100, 100)
   const firstName = session.user.name?.split(" ")[0] ?? ""
 
   return (
@@ -110,37 +110,34 @@ export default async function DashboardPage() {
       {/* ── header ── */}
       <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6">
         <div className="min-w-0">
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-foreground truncate">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-foreground">
             Welcome back{firstName ? `, ${firstName}` : ""}
-            <span className="ml-2 text-2xl sm:text-3xl lg:text-4xl select-none">👋</span>
+            <span className="ml-2 text-2xl sm:text-3xl lg:text-4xl select-none" aria-hidden="true">👋</span>
           </h1>
           <p className="mt-1.5 text-sm sm:text-base text-muted-foreground">
             Here&apos;s your document analysis overview
           </p>
         </div>
 
-        <Link href="/dashboard/upload" className="w-full sm:w-auto shrink-0">
-          <Button
-            variant="gradient"
-            size="lg"
-            className="
-              w-full group relative overflow-hidden
-              transition-all duration-300
-              hover:shadow-lg hover:shadow-blue-500/25 hover:-translate-y-0.5
-              active:translate-y-0
-            "
-          >
-            <Upload className="w-4 h-4 transition-transform group-hover:-translate-y-0.5" />
-            Upload Document
-            <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-          </Button>
+        <Link
+          href="/dashboard/upload"
+          className="
+            w-full sm:w-auto shrink-0 group relative overflow-hidden inline-flex items-center justify-center gap-2 rounded-xl font-medium transition-all duration-200 h-12 px-8 text-base
+            bg-[#1A1816] hover:bg-[#2C2A26] text-[#FAF8F3] border border-[rgba(255,255,255,0.08)]
+            hover:shadow-lg hover:shadow-blue-500/25 hover:-translate-y-0.5
+            active:translate-y-0
+          "
+        >
+          <Upload className="w-4 h-4 transition-transform group-hover:-translate-y-0.5" aria-hidden="true" />
+          Upload Document
+          <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" aria-hidden="true" />
         </Link>
       </header>
 
       {/* ── stat cards ── */}
       <section
         aria-label="Quick stats"
-        className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-5"
+        className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-5"
       >
         {quickStats.map((s, idx) => (
           <article
@@ -267,7 +264,7 @@ export default async function DashboardPage() {
             <dl className="space-y-3">
               {[
                 { label: "Documents Processed", value: usedDocs },
-                { label: "Tokens Used", value: (stats.totalAnalyses * 1000).toLocaleString() },
+                { label: "Analyses Completed", value: stats.totalAnalyses },
               ].map(({ label, value }) => (
                 <div key={label} className="flex items-center justify-between gap-2">
                   <dt className="text-sm text-muted-foreground truncate">{label}</dt>
@@ -279,8 +276,8 @@ export default async function DashboardPage() {
             {/* progress bar */}
             <div>
               <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
-                <span>{usedDocs} of {limitDocs} docs used</span>
-                <span>{Math.round(usagePct)}%</span>
+                <span>{limitDocs === Infinity ? `${usedDocs} docs used (unlimited)` : `${usedDocs} of ${limitDocs} docs used`}</span>
+                {limitDocs !== Infinity && <span>{Math.round(usagePct)}%</span>}
               </div>
               <div className="w-full bg-white/5 rounded-full h-2.5 overflow-hidden border border-white/5">
                 <div
@@ -295,11 +292,12 @@ export default async function DashboardPage() {
               </div>
             </div>
 
-            <Link href="/pricing" className="block pt-1">
-              <Button variant="outline" className="w-full group" size="lg">
-                <Sparkles className="w-4 h-4 text-blue-400 transition-transform group-hover:scale-110" />
-                Upgrade Plan
-              </Button>
+            <Link
+              href="/pricing"
+              className="block pt-1 text-center w-full rounded-xl border border-border bg-[rgba(0,0,0,0.02)] hover:bg-[rgba(0,0,0,0.06)] text-foreground font-medium h-12 px-8 text-base inline-flex items-center justify-center gap-2 transition-colors group"
+            >
+              <Sparkles className="w-4 h-4 text-blue-400 transition-transform group-hover:scale-110" aria-hidden="true" />
+              Upgrade Plan
             </Link>
           </div>
 
@@ -378,11 +376,12 @@ function EmptyState() {
         Upload your first legal document and let AI surface the risks instantly.
       </p>
 
-      <Link href="/dashboard/upload">
-        <Button variant="gradient" size="lg" className="group">
-          <Upload className="w-4 h-4 transition-transform group-hover:-translate-y-0.5" />
-          Upload Your First Document
-        </Button>
+      <Link
+        href="/dashboard/upload"
+        className="group inline-flex items-center justify-center gap-2 rounded-xl font-medium transition-all duration-200 h-12 px-8 text-base bg-[#1A1816] hover:bg-[#2C2A26] text-[#FAF8F3]"
+      >
+        <Upload className="w-4 h-4 transition-transform group-hover:-translate-y-0.5" aria-hidden="true" />
+        Upload Your First Document
       </Link>
     </div>
   )

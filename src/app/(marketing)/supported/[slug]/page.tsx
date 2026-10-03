@@ -33,7 +33,7 @@ export default function DocumentTypePage() {
     return (
       <div className="min-h-[60vh] flex items-center justify-center px-4">
         <div className="text-center max-w-md">
-          <FileText className="w-16 h-16 text-[#9aa0a6]/20 mx-auto mb-5" />
+          <FileText className="w-16 h-16 text-muted-foreground/20 mx-auto mb-5" />
           <h1 className="text-2xl font-bold mb-2">Document type not found</h1>
           <p className="text-muted-foreground text-sm mb-6">
             We don&apos;t have an information page for &ldquo;{slug}&rdquo; yet. Check our supported document list or go back home.
